@@ -73,13 +73,13 @@ panel.present(at: topLeftBelowStatusItem)
 
 ## Local development
 
-Apps built on MenuBarKit (e.g. [ClaudeUsageMenuBar](https://github.com/gabriarceus/ClaudeUsageMenuBar), [MacOSDisplayLayout](https://github.com/gabriarceus/MacOSDisplayLayout)) declare a conditional dependency: a sibling `MenuBarKit` checkout is used automatically when present, otherwise the package is resolved from GitHub. So cloning this repo next to an app is enough to edit the library and rebuild the app with no manifest change:
+Apps built on MenuBarKit (e.g. [ClaudeUsageMenuBar](https://github.com/gabriarceus/ClaudeUsageMenuBar), [DisplayAnchor](https://github.com/gabriarceus/DisplayAnchor)) declare a conditional dependency: a sibling `MenuBarKit` checkout is used automatically when present, otherwise the package is resolved from GitHub. So cloning this repo next to an app is enough to edit the library and rebuild the app with no manifest change:
 
 ```
 git-projects/
 ├── MenuBarKit/
 ├── ClaudeUsageMenuBar/
-└── MacOSDisplayLayout/
+└── DisplayAnchor/
 ```
 
 SwiftPM caches the evaluated manifest, so after **adding or removing** the sibling checkout run `swift package reset` once in the app (or `touch Package.swift`) to make it re-evaluate. Day to day, with the sibling always present, nothing extra is needed.
