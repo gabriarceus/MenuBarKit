@@ -9,7 +9,9 @@ public struct MeterRow: View {
     private let footnote: String?
 
     /// - Parameter fraction: fill amount in `0...1`; values outside are clamped.
-    public init(title: String, valueText: String, tint: Color, fraction: Double, footnote: String? = nil) {
+    public init(
+        title: String, valueText: String, tint: Color, fraction: Double, footnote: String? = nil
+    ) {
         self.title = title
         self.valueText = valueText
         self.tint = tint
@@ -34,5 +36,6 @@ public struct MeterRow: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 }

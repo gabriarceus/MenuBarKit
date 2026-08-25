@@ -24,5 +24,17 @@ public struct MeterBar: View {
             }
         }
         .frame(height: 6)
+        .accessibilityElement()
+        .accessibilityLabel(Self.progressLabel)
+        .accessibilityValue("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
+        .accessibilityAddTraits(.updatesFrequently)
     }
+
+    private static let progressLabel: String = {
+        let bundle = Bundle.resourceBundle(
+            named: "MenuBarKit_MenuBarKit",
+            fallback: Bundle.module)
+        return NSLocalizedString(
+            "progress", bundle: bundle, comment: "Progress bar accessibility label")
+    }()
 }

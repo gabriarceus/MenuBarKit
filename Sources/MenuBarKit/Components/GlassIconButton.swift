@@ -5,10 +5,16 @@ import SwiftUI
 /// in dark mode and darkens in light mode.
 public struct GlassIconButton: View {
     private let systemImage: String
+    private let accessibilityLabel: String?
     private let action: () -> Void
 
-    public init(systemImage: String, action: @escaping () -> Void) {
+    /// - Parameter accessibilityLabel: spoken label for VoiceOver; when `nil`,
+    ///   the system image name is used.
+    public init(
+        systemImage: String, accessibilityLabel: String? = nil, action: @escaping () -> Void
+    ) {
         self.systemImage = systemImage
+        self.accessibilityLabel = accessibilityLabel
         self.action = action
     }
 
@@ -22,5 +28,6 @@ public struct GlassIconButton: View {
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.tint(Color.primary.opacity(0.15)).interactive(), in: .capsule)
+        .accessibilityLabel(accessibilityLabel ?? systemImage)
     }
 }

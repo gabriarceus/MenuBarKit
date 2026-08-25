@@ -11,8 +11,9 @@ public struct Localizer: @unchecked Sendable {
     ///   - language: language code to force, or `nil`/empty to follow the system.
     public init(bundle: Bundle, language: String?) {
         if let language, !language.isEmpty,
-           let path = bundle.path(forResource: language, ofType: "lproj"),
-           let localized = Bundle(path: path) {
+            let path = bundle.path(forResource: language, ofType: "lproj"),
+            let localized = Bundle(path: path)
+        {
             self.bundle = localized
         } else {
             self.bundle = bundle
@@ -20,10 +21,13 @@ public struct Localizer: @unchecked Sendable {
     }
 
     /// The localized value for [key], falling back to [key] itself when missing.
-    /// [arguments] are substituted into `printf`-style format specifiers.
+    /// [arguments] are substituted into `printf`-style format specifiers; a
+    /// mismatch between arguments and specifiers returns the unformatted string
+    /// instead of crashing.
     public func string(_ key: String, arguments: [CVarArg] = []) -> String {
         let format = bundle.localizedString(forKey: key, value: key, table: nil)
-        return arguments.isEmpty ? format : String(format: format, arguments: arguments)
+        guard !arguments.isEmpty else { return format }
+        return (try? format.substituting(arguments)) ?? format
     }
 
     public func callAsFunction(_ key: String, _ arguments: CVarArg...) -> String {
@@ -35,9 +39,9 @@ private struct LocalizerKey: EnvironmentKey {
     static let defaultValue = Localizer(bundle: .main, language: nil)
 }
 
-public extension EnvironmentValues {
+extension EnvironmentValues {
     /// The localizer used to resolve UI strings in the current view tree.
-    var localizer: Localizer {
+    public var localizer: Localizer {
         get { self[LocalizerKey.self] }
         set { self[LocalizerKey.self] = newValue }
     }
@@ -56,11 +60,12 @@ public struct AppLanguageOption: Identifiable, Sendable {
     public var id: String { code }
 }
 
-public extension Bundle {
+extension Bundle {
     /// Language options for a picker: a leading system-follow entry (empty code)
     /// followed by each bundled localization in its own autonym, sorted by name.
-    func languageOptions(systemLabel: String) -> [AppLanguageOption] {
-        let options = localizations
+    public func languageOptions(systemLabel: String) -> [AppLanguageOption] {
+        let options =
+            localizations
             .filter { $0 != "Base" }
             .map { code -> AppLanguageOption in
                 let locale = Locale(identifier: code)
@@ -71,4 +76,25 @@ public extension Bundle {
             .sorted { $0.name < $1.name }
         return [AppLanguageOption(code: "", name: systemLabel)] + options
     }
+}
+
+extension String {
+    /// Substitutes `printf`-style specifiers, returning the receiver unchanged
+    /// when the arguments do not match the format (instead of crashing).
+    fileprivate func substituting(_ arguments: [CVarArg]) throws -> String {
+        try String(format: self, locale: Locale.current, arguments: validated(arguments))
+    }
+
+    private func validated(_ arguments: [CVarArg]) throws -> [CVarArg] {
+        let specifierCount = components(separatedBy: "%").count - 1
+        guard specifierCount == arguments.count else {
+            throw FormatMismatchError(expected: specifierCount, actual: arguments.count)
+        }
+        return arguments
+    }
+}
+
+private struct FormatMismatchError: Error {
+    let expected: Int
+    let actual: Int
 }
