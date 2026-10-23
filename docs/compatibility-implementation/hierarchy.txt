@@ -1,0 +1,14 @@
+Modern path on macOS 27.0.1; host target macOS 26; library target macOS 15
+Light baseline: 0 native visual-effect views
+Dark baseline: 0 native visual-effect views
+Standalone button: 0 native visual-effect views
+Standalone chrome: 0 native visual-effect views
+
+Temporary fallback preview on macOS 27.0.1; host and library target macOS 15
+Light baseline: 1 native visual-effect views
+NSVisualEffectView frame=(0.0, 0.0, 340.0, 202.5) material=6, blending=0, state=0
+Dark baseline: 1 native visual-effect views
+NSVisualEffectView frame=(0.0, 0.0, 340.0, 202.5) material=6, blending=0, state=0
+Standalone button: 0 native visual-effect views
+Standalone chrome: 1 native visual-effect views
+NSVisualEffectView frame=(0.0, 0.0, 268.0, 108.0) material=6, blending=0, state=0

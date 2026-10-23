@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Native panel and icon-button surfaces for macOS 15, preserving Liquid Glass on macOS 26 and later. The package deployment target is now macOS 15; runtime verification on macOS 15 remains pending.
+
 ## [1.1.0] - 2026-08-25
 
 ### Added

@@ -1,6 +1,6 @@
 # macOS compatibility audit and baseline
 
-Date: 2026-10-23. The availability audit and modern visual baseline are recorded below. Production sources and the macOS 26 package target are unchanged. No macOS 15 test machine or VM is available; older-runtime verification remains pending.
+Date: 2026-10-23. The availability audit and modern visual baseline below describe the state before the compatibility implementation. At capture time, production sources and the macOS 26 package target were unchanged. No macOS 15 test machine or VM is available; older-runtime verification remains pending.
 
 ## Environment
 
@@ -56,6 +56,8 @@ No external package resolution, authenticated registry access, notification perm
 The host creates two panels with forced Aqua and Dark Aqua appearances. Both share the tint and expanded-content state. Each has an independent action count and editable text. `Resize` adds or removes 100 points of content plus stack spacing; `Tint` switches between nil and blue at 0.3 opacity. The control window can show both panels, show either panel, hide them, record metrics, or quit. Cmd+0 returns to that window. Standard Edit menu actions support text shortcuts. Use the same content, configuration, and machine for the later comparison.
 
 `Record metrics` writes a snapshot to `/private/tmp/menubarkit-baseline-metrics.txt`. It records wall time, cumulative process CPU time from `getrusage`, panel visibility, key status, and frames in screen points. It runs only when requested. No timer, polling loop, or background sampler is added. The host's public component composition remains the same as in the initial baseline; the added controls support observation.
+
+For the later implementation checks, the host also records the AppKit view hierarchy and native material settings. `Show standalone button` opens enabled and disabled icon buttons on an ordinary window background. `Show standalone chrome` opens chrome with a 16-point transparent margin in a normal `NSWindow`, without the `MenuBarPanel` layer mask. These windows are created only when requested. The [implementation record](../compatibility-implementation/README.md) keeps their results separate from the original baseline.
 
 For this session, the source was copied into `.build/compatibility-host/Sources/BaselineHost/Host.swift`. Its temporary manifest used Swift tools 6.2, a macOS 26 floor, a local `.package(path: "../..")` dependency, and one executable target named `BaselineHost` depending on `MenuBarKit`. Build with the same cache options and `--package-path .build/compatibility-host`. The final host source built successfully and passed `swift-format` strict lint with four-space indentation.
 

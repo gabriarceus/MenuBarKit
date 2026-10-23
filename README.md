@@ -8,8 +8,8 @@ A Swift package with the shared UI foundation for macOS menu bar apps, so they a
 
 ## Requirements
 
-- macOS 26 (Tahoe) or newer, at build **and** run time — the panel is built on SwiftUI's Liquid Glass (`glassEffect`), which is macOS 26 API
-- Xcode 26 / Swift 6.2
+- Declared deployment target: macOS 15. Panels and icon buttons use Liquid Glass on macOS 26 and later, and native fallback surfaces on earlier systems. Runtime verification on macOS 15 remains pending; the current tested runtime is macOS 27.0.1.
+- Xcode 26 / Swift 6.2 or newer, with the macOS 26 SDK or newer
 - No external dependencies
 
 ## Installation
@@ -19,7 +19,7 @@ Add the package to your app's `Package.swift`:
 ```swift
 let package = Package(
     name: "MyApp",
-    platforms: [.macOS(.v26)], // required: MenuBarKit itself is macOS 26+
+    platforms: [.macOS(.v26)], // Match the requirements of the MenuBarKit release you use.
     dependencies: [
         .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.0.0")
     ],
@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 ```
 
-Wrapping the root view in `PanelChrome` is what gives the panel its glass background and rounded shape — `MenuBarPanel` itself is transparent and borderless.
+Wrapping the root view in `PanelChrome` gives the panel its translucent background and rounded shape — `MenuBarPanel` itself is transparent and borderless.
 
 ## Modules
 
@@ -82,7 +82,7 @@ Wrapping the root view in `PanelChrome` is what gives the panel its glass backgr
 | Type                      | Purpose                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MenuBarPanel`            | Borderless, non-activating floating `NSPanel` that presents popover-style content without anchoring to a view — it stays put even if a menu bar manager (Ice, Bartender, …) hides the status icon while open. Sizes itself from the SwiftUI content, keeps the top-left corner pinned while growing, dismisses on clicks outside the app, and can become key so text fields work. |
-| `PanelChrome`             | Liquid Glass chrome for the panel content. Optional `tint:` washes a color over the glass while keeping its translucency (the color's opacity controls the strength).                                                                                                                                                                                                             |
+| `PanelChrome`             | Liquid Glass on macOS 26 and later, with native popover material on earlier systems. Optional `tint:` colors the translucent surface (the color's opacity controls the strength).                                                                                                                                                                                                             |
 | `PanelNavigation<Screen>` | Observable current-screen state (`@Published var screen`), drivable from both SwiftUI (back button) and the panel owner (reset on dismiss).                                                                                                                                                                                                                                       |
 
 ### DesignSystem
@@ -96,7 +96,7 @@ Wrapping the root view in `PanelChrome` is what gives the panel its glass backgr
 | Component               | Purpose                                                                                                                                                                     |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PanelHeader`           | Header row: optional leading accessory, headline title, trailing actions.                                                                                                   |
-| `GlassIconButton`       | Small capsule icon button with an interactive glass background; the `primary`-based tint lightens in dark mode and darkens in light mode, so it stays visible on any theme. |
+| `GlassIconButton`       | Capsule icon button with interactive Liquid Glass on macOS 26 and later, and a primary-colored bordered surface on earlier systems. |
 | `MeterRow` / `MeterBar` | Metered quantity (title, tinted value, capsule bar, optional footnote). The bar keeps its tint when the window is not key, unlike a tinted `ProgressView`.                  |
 | `SectionLabel`          | Small field label; renders its text uppercase, so callers pass normal-case strings.                                                                                         |
 | `inputChrome(focused:)` | View modifier wrapping a text input in a bordered container with an accent highlight on focus.                                                                              |

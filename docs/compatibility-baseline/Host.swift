@@ -43,11 +43,32 @@ struct BaselineContent: View {
     }
 }
 
+private struct StandaloneButtons: View {
+    @State private var count = 0
+
+    var body: some View {
+        VStack(spacing: Theme.Spacing.l) {
+            Text("Actions: \(count)")
+            HStack {
+                GlassIconButton(systemImage: "plus", accessibilityLabel: "Increment") { count += 1 }
+                GlassIconButton(systemImage: "plus", accessibilityLabel: "Disabled action") {
+                    count += 1
+                }
+                .disabled(true)
+            }
+        }
+        .padding(Theme.Spacing.l)
+        .frame(width: 300, height: 120)
+    }
+}
+
 @MainActor
 final class BaselineDelegate: NSObject, NSApplicationDelegate {
     private let state = BaselineState()
     private var panels: [MenuBarPanel] = []
     private var controls: NSWindow!
+    private var standaloneButton: NSWindow?
+    private var standaloneChrome: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menu = NSMenu()
@@ -89,7 +110,7 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
             panels.append(panel)
         }
         controls = NSWindow(
-            contentRect: NSRect(x: 100, y: 120, width: 360, height: 220),
+            contentRect: NSRect(x: 100, y: 120, width: 360, height: 300),
             styleMask: [.titled, .closable], backing: .buffered, defer: false
         )
         controls.title = "MenuBarKit baseline controls"
@@ -103,6 +124,8 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
                     for panel in self.panels { panel.dismiss() }
                 }
                 Button("Record metrics") { self.recordMetrics() }
+                Button("Show standalone button") { self.showStandaloneButton() }
+                Button("Show standalone chrome") { self.showStandaloneChrome() }
                 Button("Quit baseline") { NSApp.terminate(nil) }
             }.padding()
         )
@@ -130,9 +153,59 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
                 "\(panel.title): visible=\(panel.isVisible), key=\(panel.isKeyWindow), frame=\(panel.frame)"
             )
         }
+        func appendHierarchy(_ view: NSView, indent: String = "") {
+            var detail = ""
+            switch view {
+            case let effect as NSVisualEffectView:
+                detail =
+                    " material=\(effect.material.rawValue), blending=\(effect.blendingMode.rawValue), state=\(effect.state.rawValue)"
+            default:
+                break
+            }
+            lines.append(
+                "\(indent)\(String(reflecting: type(of: view))) frame=\(view.frame)\(detail)")
+            for child in view.subviews { appendHierarchy(child, indent: indent + "  ") }
+        }
+        for window in panels + [standaloneButton, standaloneChrome].compactMap({ $0 }) {
+            lines.append("Hierarchy: \(window.title)")
+            if let content = window.contentView { appendHierarchy(content) }
+        }
         try! lines.joined(separator: "\n").write(
             toFile: "/private/tmp/menubarkit-baseline-metrics.txt", atomically: true,
             encoding: .utf8)
+    }
+
+    private func showStandaloneButton() {
+        if standaloneButton == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 900, y: 500, width: 300, height: 120),
+                styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.title = "Standalone button"
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: StandaloneButtons())
+            standaloneButton = window
+        }
+        standaloneButton?.makeKeyAndOrderFront(nil)
+    }
+
+    private func showStandaloneChrome() {
+        if standaloneChrome == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 900, y: 700, width: 300, height: 140),
+                styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.title = "Standalone chrome"
+            window.isReleasedWhenClosed = false
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.contentView = NSHostingView(
+                rootView: PanelChrome(tint: Color.blue.opacity(0.3)) {
+                    Text("Standalone chrome")
+                        .frame(width: 268, height: 108)
+                }
+                .padding(16))
+            standaloneChrome = window
+        }
+        standaloneChrome?.makeKeyAndOrderFront(nil)
     }
 
     private func showPanel(at index: Int) {

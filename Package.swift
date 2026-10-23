@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "MenuBarKit",
     defaultLocalization: "en",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS(.v15)],
     products: [
         .library(name: "MenuBarKit", targets: ["MenuBarKit"])
     ],
