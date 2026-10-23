@@ -1,0 +1,15 @@
+Window: "Dark baseline", App: MenuBarKitBaseline.
+0 system dialog Dark baseline, Secondary Actions: Raise
+	1 container
+		2 button Description: Increment, ID: plus
+		3 text Dark baseline
+		4 unknown Description: Actions, 1, progress, Details: 60%
+		5 text TEXT INPUT
+		6 text field (settable) Value: Runtime edited, Placeholder: Value
+		7 button Resize
+		8 button Tint
+9 menu bar
+	10 MenuBarKitBaseline
+	11 Edit
+
+The focused UI element is 6 text field (settable) Value: Runtime edited, Placeholder: Value

@@ -1,0 +1,10 @@
+Time: 1792765598.2119231
+CPU seconds: 6.782642
+Active: true
+Tint: true, opacity: 0.6
+Reduce Transparency: false
+Increase Contrast: false
+Reduce Motion: false
+VoiceOver: false
+Light baseline: visible=true, key=true, frame=(80.0, 1003.0, 340.0, 207.0), appearance=NSAppearanceNameDarkAqua
+Dark baseline: visible=true, key=false, frame=(480.0, 1003.0, 340.0, 207.0), appearance=NSAppearanceNameDarkAqua

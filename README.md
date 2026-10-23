@@ -31,6 +31,16 @@ let package = Package(
 
 In an Xcode project instead: _File ▸ Add Package Dependencies…_ and paste the same URL.
 
+The example keeps macOS 26 for compatibility with the 1.0 and 1.1 releases. The macOS 15 fallback is currently unreleased in this checkout. To evaluate it locally, use `.package(path: "../MenuBarKit")`; an app can declare `.macOS(.v15)` after auditing its own APIs, dependencies, bundle metadata, and packaging. A successful build does not replace testing on that runtime.
+
+## Platform support policy
+
+macOS 26 and later remain the primary platform. Existing panels and icon buttons select their native surface automatically. Older material differs from Liquid Glass; tint opacity is preserved, and strong tints can reduce contrast with similarly colored content. The current declared floor is macOS 15, while runtime verification from this work covers macOS 27.0.1 only. macOS 15 and macOS 26 checks remain pending.
+
+New capabilities may require a newer macOS version through `@available`. A package deployment target does not require every future API to work on that minimum. Keep the modern SDK and Swift tools requirement separate from the runtime floor.
+
+An older-system fallback should remain small and useful. Reassess the minimum if maintaining it would require duplicated window management, state, or architecture. Raising the floor is an explicit release decision with migration notes; there is no automatic annual support window. Each consumer remains responsible for its own compatibility. Lowering MenuBarKit's target does not lower DisplayAnchor's macOS 26 requirement.
+
 ## Usage
 
 A menu bar app is an accessory app (no Dock icon, no main window): set `LSUIElement` to `true` in its `Info.plist`, or call `NSApp.setActivationPolicy(.accessory)` at launch. From there, the app delegate owns a status item and a `MenuBarPanel`:

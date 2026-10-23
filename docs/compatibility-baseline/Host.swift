@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class BaselineState: ObservableObject {
     @Published var tinted = false
+    @Published var tintOpacity = 0.3
     @Published var expanded = false
 }
 
@@ -16,7 +17,7 @@ struct BaselineContent: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        PanelChrome(tint: state.tinted ? Color.blue.opacity(0.3) : nil) {
+        PanelChrome(tint: state.tinted ? Color.blue.opacity(state.tintOpacity) : nil) {
             VStack(alignment: .leading, spacing: Theme.Spacing.l) {
                 PanelHeader(title: title) {
                     GlassIconButton(systemImage: "plus", accessibilityLabel: "Increment") {
@@ -69,6 +70,7 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
     private var controls: NSWindow!
     private var standaloneButton: NSWindow?
     private var standaloneChrome: NSWindow?
+    private var backdrop: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menu = NSMenu()
@@ -78,6 +80,18 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
             withTitle: "Show controls", action: #selector(showControls), keyEquivalent: "0"
         )
         .target = self
+        for (title, action) in [
+            ("Show test background", #selector(showBackdrop)),
+            ("Weaker tint", #selector(useWeakTint)),
+            ("Consumer tint", #selector(useConsumerTint)),
+            ("Stronger tint", #selector(useStrongTint)),
+            ("System appearance", #selector(useSystemAppearance)),
+            ("Forced appearances", #selector(useForcedAppearances)),
+            ("Record metrics", #selector(recordMetrics)),
+            ("Run workload", #selector(runWorkload)),
+        ] {
+            appMenu.addItem(withTitle: title, action: action, keyEquivalent: "").target = self
+        }
         appMenu.addItem(
             withTitle: "Quit baseline", action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
@@ -141,16 +155,27 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
         controls.makeKeyAndOrderFront(nil)
     }
 
-    private func recordMetrics() {
+    private func cpuTime() -> Double {
         var usage = rusage()
         getrusage(RUSAGE_SELF, &usage)
-        let cpu =
+        return
             Double(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec)
             + Double(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) / 1_000_000
-        var lines = ["Time: \(Date().timeIntervalSince1970)", "CPU seconds: \(cpu)"]
+    }
+
+    @objc private func recordMetrics() {
+        let workspace = NSWorkspace.shared
+        var lines = [
+            "Time: \(Date().timeIntervalSince1970)", "CPU seconds: \(cpuTime())",
+            "Active: \(NSApp.isActive)", "Tint: \(state.tinted), opacity: \(state.tintOpacity)",
+            "Reduce Transparency: \(workspace.accessibilityDisplayShouldReduceTransparency)",
+            "Increase Contrast: \(workspace.accessibilityDisplayShouldIncreaseContrast)",
+            "Reduce Motion: \(workspace.accessibilityDisplayShouldReduceMotion)",
+            "VoiceOver: \(workspace.isVoiceOverEnabled)",
+        ]
         for panel in panels {
             lines.append(
-                "\(panel.title): visible=\(panel.isVisible), key=\(panel.isKeyWindow), frame=\(panel.frame)"
+                "\(panel.title): visible=\(panel.isVisible), key=\(panel.isKeyWindow), frame=\(panel.frame), appearance=\(panel.effectiveAppearance.name.rawValue)"
             )
         }
         func appendHierarchy(_ view: NSView, indent: String = "") {
@@ -173,6 +198,88 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
         try! lines.joined(separator: "\n").write(
             toFile: "/private/tmp/menubarkit-baseline-metrics.txt", atomically: true,
             encoding: .utf8)
+    }
+
+    @objc private func useWeakTint() {
+        state.tintOpacity = 0.1
+        state.tinted = true
+    }
+    @objc private func useConsumerTint() {
+        state.tintOpacity = 0.3
+        state.tinted = true
+    }
+    @objc private func useStrongTint() {
+        state.tintOpacity = 0.6
+        state.tinted = true
+    }
+
+    @objc private func useSystemAppearance() {
+        for panel in panels { panel.appearance = nil }
+    }
+
+    @objc private func useForcedAppearances() {
+        panels[0].appearance = NSAppearance(named: .aqua)
+        panels[1].appearance = NSAppearance(named: .darkAqua)
+    }
+
+    @objc private func showBackdrop() {
+        if backdrop == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 40, y: 800, width: 860, height: 440),
+                styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.title = "Material test background"
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(
+                rootView: HStack(spacing: 0) {
+                    Color.white
+                    Color.black
+                    Color.red
+                    Color.blue
+                    Color.green
+                })
+            backdrop = window
+        }
+        backdrop?.orderFrontRegardless()
+        showPanels()
+    }
+
+    @objc private func runWorkload() {
+        Task {
+            state.tintOpacity = 0.3
+            state.tinted = true
+            state.expanded = false
+            var lines: [String] = []
+            for sample in 1...3 {
+                let start = Date()
+                let startCPU = cpuTime()
+                var failures = 0
+                for _ in 0..<10 {
+                    showPanels()
+                    let frames = panels.map(\.frame)
+                    try! await Task.sleep(for: .milliseconds(200))
+                    state.expanded = true
+                    try! await Task.sleep(for: .milliseconds(100))
+                    for (panel, frame) in zip(panels, frames) {
+                        if abs(panel.frame.minX - frame.minX) > 0.5
+                            || abs(panel.frame.maxY - frame.maxY) > 0.5
+                            || panel.frame.height <= frame.height
+                        {
+                            failures += 1
+                        }
+                    }
+                    state.expanded = false
+                    try! await Task.sleep(for: .milliseconds(100))
+                    for panel in panels { panel.dismiss() }
+                    try! await Task.sleep(for: .milliseconds(100))
+                }
+                lines.append(
+                    "Sample \(sample): wall=\(Date().timeIntervalSince(start)), cpu=\(cpuTime() - startCPU), geometry failures=\(failures)"
+                )
+            }
+            showPanels()
+            try! (lines.joined(separator: "\n") + "\n").write(
+                toFile: "/private/tmp/menubarkit-workload.txt", atomically: true, encoding: .utf8)
+        }
     }
 
     private func showStandaloneButton() {
