@@ -1,0 +1,8 @@
+Time: 1792789682.114955
+CPU seconds: 0.963242
+Active: true
+Tint: false, opacity: 0.3
+Reduce Transparency: false
+Increase Contrast: false
+Reduce Motion: false
+VoiceOver: false
