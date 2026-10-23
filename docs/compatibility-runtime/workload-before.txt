@@ -1,3 +1,0 @@
-Sample 1: wall=5.505833983421326, cpu=1.161601, geometry failures=0
-Sample 2: wall=5.475938081741333, cpu=1.103955, geometry failures=0
-Sample 3: wall=5.471979975700378, cpu=1.1383069999999997, geometry failures=0

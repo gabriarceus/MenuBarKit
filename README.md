@@ -41,6 +41,8 @@ New capabilities may require a newer macOS version through `@available`. A packa
 
 An older-system fallback should remain small and useful. Reassess the minimum if maintaining it would require duplicated window management, state, or architecture. Raising the floor is an explicit release decision with migration notes; there is no automatic annual support window. Each consumer remains responsible for its own compatibility. Lowering MenuBarKit's target does not lower DisplayAnchor's macOS 26 requirement.
 
+See the [compatibility verification summary](docs/macos-compatibility.md) for recorded results and remaining checks.
+
 ## Usage
 
 A menu bar app is an accessory app (no Dock icon, no main window): set `LSUIElement` to `true` in its `Info.plist`, or call `NSApp.setActivationPolicy(.accessory)` at launch. From there, the app delegate owns a status item and a `MenuBarPanel`:

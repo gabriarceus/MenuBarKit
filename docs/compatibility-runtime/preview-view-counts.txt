@@ -1,3 +1,0 @@
-Light baseline: 1 native visual-effect views
-Dark baseline: 1 native visual-effect views
-Standalone button: 0 native visual-effect views
