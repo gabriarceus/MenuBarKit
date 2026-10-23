@@ -1,0 +1,35 @@
+Compact panels before resize
+Time: 1792748712.59464
+CPU seconds: 0.473741
+Light baseline: visible=true, key=false, frame=(80.0, 1003.0, 340.0, 207.0)
+Dark baseline: visible=true, key=false, frame=(480.0, 1003.0, 340.0, 207.0)
+
+Expanded panels
+Time: 1792748749.5840569
+CPU seconds: 0.685577
+Light baseline: visible=true, key=false, frame=(80.0, 887.0, 340.0, 323.0)
+Dark baseline: visible=true, key=false, frame=(480.0, 887.0, 340.0, 323.0)
+
+Explicit dismissal
+Time: 1792748765.14835
+CPU seconds: 0.851952
+Light baseline: visible=false, key=false, frame=(80.0, 1003.0, 340.0, 207.0)
+Dark baseline: visible=false, key=false, frame=(480.0, 1003.0, 340.0, 207.0)
+
+Idle sample start
+Time: 1792748896.2628632
+CPU seconds: 1.097057
+Light baseline: visible=true, key=false, frame=(80.0, 1003.0, 340.0, 207.0)
+Dark baseline: visible=true, key=false, frame=(480.0, 1003.0, 340.0, 207.0)
+
+Idle sample end
+Time: 1792748919.3119159
+CPU seconds: 1.117925
+Light baseline: visible=true, key=false, frame=(80.0, 1003.0, 340.0, 207.0)
+Dark baseline: visible=true, key=false, frame=(480.0, 1003.0, 340.0, 207.0)
+
+After coordinate click in Calculator title bar
+Time: 1792748992.411737
+CPU seconds: 1.26766
+Light baseline: visible=false, key=false, frame=(80.0, 1003.0, 340.0, 207.0)
+Dark baseline: visible=false, key=false, frame=(480.0, 1003.0, 340.0, 207.0)

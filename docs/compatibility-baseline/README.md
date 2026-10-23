@@ -1,6 +1,6 @@
 # macOS compatibility audit and baseline
 
-Date: 2026-10-23. This is evidence for checkpoint 1 of the [compatibility plan](../macos-compatibility-plan.md). The availability audit is complete for the installed SDK; the visual baseline is partial. Production sources and the macOS 26 package target are unchanged.
+Date: 2026-10-23. The availability audit and modern visual baseline are recorded below. Production sources and the macOS 26 package target are unchanged. No macOS 15 test machine or VM is available; older-runtime verification remains pending.
 
 ## Environment
 
@@ -53,7 +53,9 @@ No external package resolution, authenticated registry access, notification perm
 
 [Host.swift](Host.swift) reuses `MenuBarPanel`, `PanelChrome`, `PanelHeader`, `GlassIconButton`, `MeterRow`, `SectionLabel`, `inputChrome`, and shared tokens. It adds only development content and window controls. It is not a library target or a sample product in the production manifest.
 
-The host creates two panels with forced Aqua and Dark Aqua appearances. Both share the tint and expanded-content state. Each has an independent action count and editable text. `Resize` adds or removes 100 points of content plus stack spacing; `Tint` switches between nil and blue at 0.3 opacity. The control window can show both panels, show either panel, hide them, or quit. Use the same content, configuration, and machine for the later comparison.
+The host creates two panels with forced Aqua and Dark Aqua appearances. Both share the tint and expanded-content state. Each has an independent action count and editable text. `Resize` adds or removes 100 points of content plus stack spacing; `Tint` switches between nil and blue at 0.3 opacity. The control window can show both panels, show either panel, hide them, record metrics, or quit. Cmd+0 returns to that window. Standard Edit menu actions support text shortcuts. Use the same content, configuration, and machine for the later comparison.
+
+`Record metrics` writes a snapshot to `/private/tmp/menubarkit-baseline-metrics.txt`. It records wall time, cumulative process CPU time from `getrusage`, panel visibility, key status, and frames in screen points. It runs only when requested. No timer, polling loop, or background sampler is added. The host's public component composition remains the same as in the initial baseline; the added controls support observation.
 
 For this session, the source was copied into `.build/compatibility-host/Sources/BaselineHost/Host.swift`. Its temporary manifest used Swift tools 6.2, a macOS 26 floor, a local `.package(path: "../..")` dependency, and one executable target named `BaselineHost` depending on `MenuBarKit`. Build with the same cache options and `--package-path .build/compatibility-host`. The final host source built successfully and passed `swift-format` strict lint with four-space indentation.
 
@@ -63,14 +65,28 @@ The executable and resource bundle from `.build/compatibility-host/.build/out/Pr
 
 | Check | Observation | Evidence limit |
 | --- | --- | --- |
-| Initial opening | The dark panel rendered its title, capsule icon button, meter, text input, and controls. | Qualitative observation on macOS 27.0.1. No latency measurement. |
+| Initial opening | Both light and dark panels rendered their title, capsule icon button, meter, text input, and controls. | Qualitative observation on macOS 27.0.1. No opening latency measurement. |
 | Button action | Clicking Increment changed Actions from 0 to 1. | One click observed through accessibility state. |
-| Content-driven resize | Resize increased the screenshot height from 414 to 646 pixels at the same 680-pixel width; content and rounded corners remained visible. | The captures are window crops. They do not prove screen-coordinate anchoring or the external shadow. |
-| Tint update | A blue 0.3-opacity tint appeared on the existing expanded panel. | Dark appearance only. |
-| Text input | The field gained an accent focus border and accepted appended text. | Full keyboard shortcut behavior was not established; the minimal AppKit host has no Edit menu. |
-| Idle | The panel remained available across observation calls without an observed hang. | No timed idle sample, CPU result, or performance comparison. `ps` was blocked by the filesystem sandbox. |
-| Light appearance, dismissal, reopening | Not established reliably. Cross-app automation and attempts to return to the control window gave inconsistent results. | After two attempts, the same automation approach was stopped. These checks remain pending. |
+| Content-driven resize | Both panels changed from 340 by 207 points to 340 by 323 points. Light-panel origin changed from (80, 1003) to (80, 887); dark-panel origin changed from (480, 1003) to (480, 887). Their top edges stayed at y=1210. Returning to compact content restored the 207-point height. | Window crops show rounded corners. The external window shadow still needs a focused visual check. |
+| Tint update | A blue 0.3-opacity tint appeared on both existing panels. | Captured in forced light and dark appearances; varied backgrounds and accessibility settings remain for runtime validation. |
+| Text input | The field gained an accent focus border. Cmd+A followed by typing replaced the value with `Baseline edited`. | Verified after adding the host's standard Edit menu. |
+| Idle | Both compact, tinted panels remained visible and non-key across a 23.049-second sample. Cumulative process CPU increased by 0.020868 seconds, about 0.0905% of one core on average. | One short Debug baseline, including endpoint button handling. This is not a performance guarantee or a before/after comparison. |
+| Explicit dismissal | Hide panels recorded `visible=false` for both panels. | Raw snapshot retained. |
+| Outside click | A coordinate click in Calculator's title bar recorded `visible=false` for both panels. | Clicking a menu through accessibility alone did not establish mouse-event dismissal; the coordinate test used an ordinary external window. |
+| Reopening | Show panels restored the dark panel with Actions still 1, the edited text, and the tint. | Accessibility state and a saved screenshot confirm reopening. |
 
-Three dark-panel screenshots were captured in the task conversation: compact untinted, expanded untinted, and expanded tinted with focused input. The computer-use tool did not provide persistent screenshot file paths; no image artifacts were saved in the repository. Capture persistent before-change images for the later comparison before implementing checkpoint 2.
+Six raw measurement snapshots are saved in [measurements.txt](measurements.txt). The following window-only captures were saved before changing production rendering:
 
-The last host edit added individual light/dark show controls and was build-checked, but those added controls were not runtime-verified. Modern visual parity, standalone components, accessibility preferences, a focused opening/resizing/idle comparison, DisplayAnchor integration, and runtime behavior on macOS 15 and 26 remain pending. No older-runtime support claim follows from this audit.
+| Capture | State |
+| --- | --- |
+| [Light, untinted](screenshots/light-untinted.jpg) | Compact content. |
+| [Dark, untinted](screenshots/dark-untinted.jpg) | Compact content before the action and edit checks. |
+| [Light, tinted](screenshots/light-tinted.jpg) | Compact content with blue at 0.3 opacity. |
+| [Dark, tinted](screenshots/dark-tinted.jpg) | Compact content with edited text and Actions 1. |
+| [Light, expanded and tinted](screenshots/light-tinted-expanded.jpg) | Additional 100-point content and stack spacing. |
+| [Dark, expanded and tinted](screenshots/dark-tinted-expanded.jpg) | Additional content with focused, edited input. |
+| [Dark, reopened](screenshots/dark-reopened.jpg) | Retained tint, Actions 1, and edited text after outside-click dismissal. |
+
+The continuation verified the individual panel controls, saved persistent window images, added standard menu actions, and measured frames and process CPU through the host. Outside-click verification used Calculator after desktop automation was unavailable. No desktop screenshot was taken.
+
+Modern visual parity after implementation, standalone components, accessibility preferences, the external shadow, a focused before/after performance comparison, DisplayAnchor integration, and runtime behavior on macOS 15 and 26 remain pending. No older-runtime support claim follows from this baseline. The user confirmed that no macOS 15 machine or VM is available and requested that runtime verification remain pending.

@@ -50,6 +50,32 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
     private var controls: NSWindow!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let menu = NSMenu()
+        let appItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(
+            withTitle: "Show controls", action: #selector(showControls), keyEquivalent: "0"
+        )
+        .target = self
+        appMenu.addItem(
+            withTitle: "Quit baseline", action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q")
+        appItem.submenu = appMenu
+        menu.addItem(appItem)
+        let editItem = NSMenuItem()
+        editItem.title = "Edit"
+        let editMenu = NSMenu(title: "Edit")
+        for (title, action, key) in [
+            ("Cut", #selector(NSText.cut(_:)), "x"),
+            ("Copy", #selector(NSText.copy(_:)), "c"),
+            ("Paste", #selector(NSText.paste(_:)), "v"),
+            ("Select All", #selector(NSText.selectAll(_:)), "a"),
+        ] {
+            editMenu.addItem(withTitle: title, action: action, keyEquivalent: key)
+        }
+        editItem.submenu = editMenu
+        menu.addItem(editItem)
+        NSApp.mainMenu = menu
         for (title, appearance) in [
             ("Light baseline", NSAppearance.Name.aqua),
             ("Dark baseline", NSAppearance.Name.darkAqua),
@@ -63,7 +89,7 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
             panels.append(panel)
         }
         controls = NSWindow(
-            contentRect: NSRect(x: 100, y: 120, width: 360, height: 180),
+            contentRect: NSRect(x: 100, y: 120, width: 360, height: 220),
             styleMask: [.titled, .closable], backing: .buffered, defer: false
         )
         controls.title = "MenuBarKit baseline controls"
@@ -76,6 +102,7 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
                 Button("Hide panels") {
                     for panel in self.panels { panel.dismiss() }
                 }
+                Button("Record metrics") { self.recordMetrics() }
                 Button("Quit baseline") { NSApp.terminate(nil) }
             }.padding()
         )
@@ -85,6 +112,27 @@ final class BaselineDelegate: NSObject, NSApplicationDelegate {
 
     private func showPanels() {
         for index in panels.indices { showPanel(at: index) }
+    }
+
+    @objc private func showControls() {
+        controls.makeKeyAndOrderFront(nil)
+    }
+
+    private func recordMetrics() {
+        var usage = rusage()
+        getrusage(RUSAGE_SELF, &usage)
+        let cpu =
+            Double(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec)
+            + Double(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) / 1_000_000
+        var lines = ["Time: \(Date().timeIntervalSince1970)", "CPU seconds: \(cpu)"]
+        for panel in panels {
+            lines.append(
+                "\(panel.title): visible=\(panel.isVisible), key=\(panel.isKeyWindow), frame=\(panel.frame)"
+            )
+        }
+        try! lines.joined(separator: "\n").write(
+            toFile: "/private/tmp/menubarkit-baseline-metrics.txt", atomically: true,
+            encoding: .utf8)
     }
 
     private func showPanel(at index: Int) {
