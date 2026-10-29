@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native launch-at-login state and explicit registration actions, including approval, unavailable states, errors, and refresh after returning from System Settings.
 - Native panel and icon-button surfaces for macOS 15, preserving Liquid Glass on macOS 26 and later. The package deployment target is now macOS 15. Build and focused UI checks ran on macOS 27.0.1; runtime verification on macOS 15 and 26 remains pending. See the [verification summary](docs/macos-compatibility.md).
 - Opt-in native edit-menu commands and child-first Escape handling, preserving existing application menus.
-- Optional root-hosted contextual help with cancellation on hover exit, removal, and host deactivation; accessible names remain separate from help text.
+- Optional root-hosted contextual help sized to its text within panel bounds, with cancellation on hover exit, removal, and host deactivation; accessible names remain separate from help text.
 - Optional status-item integration with primary/secondary actions, template icons, text, and notification dots; optional screen-aware panel positioning with caller-owned content sizing and scrolling.
 
 ## [1.1.0] - 2026-08-25

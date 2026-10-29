@@ -127,6 +127,7 @@ private struct HelpBubble: View {
                 maxWidth: max(0, min(260, container.width - 8)),
                 maxHeight: max(0, container.height - 8)
             )
+            .fixedSize(horizontal: false, vertical: true)
             .clipped()
             .background(.regularMaterial, in: .rect(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.quaternary))
