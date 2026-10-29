@@ -12,11 +12,14 @@ public final class MenuBarPanel: NSPanel {
     public var onDismiss: (() -> Void)?
 
     private var clickMonitor: Any?
+    var ignoreOutsideClick: ((NSEvent) -> Bool)?
+    var presentationChanged: ((Bool) -> Void)?
 
     /// Top-left corner (screen coordinates) the panel is pinned to. While set,
     /// content-driven resizes are re-anchored so the panel grows downward instead
     /// of moving its top edge.
     private var anchorTopLeft: NSPoint?
+    private var fittingBounds: NSRect?
 
     public init(rootView: some View, width: CGFloat) {
         super.init(
@@ -70,16 +73,32 @@ public final class MenuBarPanel: NSPanel {
     /// content shape, leaving a dark rectangular outline around the rounded glass.
     @objc private func reanchor() {
         guard let top = anchorTopLeft, isVisible else { return }
-        setFrameTopLeftPoint(top)
+        setFrameTopLeftPoint(resolvedTopLeft(top))
         invalidateShadow()
     }
 
     /// Positions the panel so its top-left corner sits at `topLeft` (screen
     /// coordinates) and shows it, arming the outside-click dismissal.
     public func present(at topLeft: NSPoint) {
+        fittingBounds = nil
+        show(at: topLeft)
+    }
+
+    /// Fits the position during presentation and growth. The caller constrains content size and scrolling.
+    public func present(at topLeft: NSPoint, fittingWithin bounds: NSRect) {
+        fittingBounds = bounds
+        show(at: topLeft)
+    }
+
+    private func resolvedTopLeft(_ topLeft: NSPoint) -> NSPoint {
+        guard let fittingBounds else { return topLeft }
+        return PanelPlacement.fit(topLeft, size: frame.size, bounds: fittingBounds)
+    }
+
+    private func show(at topLeft: NSPoint) {
         anchorTopLeft = topLeft
         layoutIfNeeded()
-        setFrameTopLeftPoint(topLeft)
+        setFrameTopLeftPoint(resolvedTopLeft(topLeft))
         makeKeyAndOrderFront(nil)
         // The glass renders asynchronously; recompute the shadow once it has
         // drawn, or it is cast for an opaque rectangle (dark squared corners).
@@ -89,10 +108,12 @@ public final class MenuBarPanel: NSPanel {
         if clickMonitor == nil {
             clickMonitor = NSEvent.addGlobalMonitorForEvents(
                 matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
-            ) { [weak self] _ in
+            ) { [weak self] event in
+                guard self?.ignoreOutsideClick?(event) != true else { return }
                 self?.dismiss()
             }
         }
+        presentationChanged?(true)
     }
 
     /// Hides the panel and tears down the click monitor. Safe to call repeatedly.
@@ -104,6 +125,8 @@ public final class MenuBarPanel: NSPanel {
         guard isVisible else { return }
         orderOut(nil)
         anchorTopLeft = nil
+        fittingBounds = nil
+        presentationChanged?(false)
         onDismiss?()
     }
 }

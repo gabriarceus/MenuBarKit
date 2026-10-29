@@ -4,7 +4,9 @@ A Swift package with the shared UI foundation for macOS menu bar apps, so they a
 
 **What it gives you:** the panel that drops down from the menu bar (window setup, glass background, sizing, positioning, outside-click dismissal), plus components to fill it — headers, icon buttons, meters, field labels — on top of shared spacing/radius/typography/color tokens. Helpers for user notifications and localization come along, since menu bar apps tend to need both.
 
-**What it does not do:** it is not an app template. You still create the `NSStatusItem`, own the app delegate, and write your own screens; MenuBarKit only gives you the panel and the pieces inside it.
+**What it does not do:** it is not an app template. You still create the `NSStatusItem`, own the app delegate, and write your own screens; MenuBarKit provides the shared panel, UI pieces, and optional platform helpers.
+
+Optional [app-management helpers](docs/app-management.md) connect a caller-owned status item and panel, fit panel positions to a screen, supply native edit commands, and expose launch-at-login state. [Global shortcuts](docs/global-shortcuts.md) stay in the consumer through KeyboardShortcuts.
 
 ## Requirements
 
@@ -112,7 +114,21 @@ Wrapping the root view in `PanelChrome` gives the panel its translucent backgrou
 | `MeterRow` / `MeterBar` | Metered quantity (title, tinted value, capsule bar, optional footnote). The bar keeps its tint when the window is not key, unlike a tinted `ProgressView`.                  |
 | `SectionLabel`          | Small field label; renders its text uppercase, so callers pass normal-case strings.                                                                                         |
 | `PanelSection`          | Titled surface with an optional description and caller-supplied content. See the [compact settings guide](docs/compact-settings.md) for native control composition. |
+| `panelHelp(_:)` / `panelHelpHost(isActive:)` | Delayed, root-hosted contextual help that preserves accessible names. See the [help guide](docs/contextual-help.md). |
 | `inputChrome(focused:)` | View modifier wrapping a text input in a bordered container with an accent highlight on focus.                                                                              |
+
+For empty results, active work, and failures, see the [native compact feedback guide](docs/compact-feedback.md).
+
+### App management
+
+| Type | Purpose |
+| --- | --- |
+| `StatusItemController` | Optional primary/secondary actions, presentation state, template icons, text, and a notification dot for a caller-owned status item and panel. |
+| `PanelPlacement` | Status-item geometry or main-screen fallback, plus usable bounds for caller-owned content sizing and scrolling. |
+| `EditMenu` / `panelEscape(cancelEditing:dismiss:)` | Opt-in responder-chain edit commands and child-first Escape handling. |
+| `LoginItem` | Native ServiceManagement status, explicit registration requests, errors, and refresh after app activation. |
+
+See the [ownership and integration guide](docs/app-management.md). These helpers add no mandatory external dependencies.
 
 ### Notifications
 
