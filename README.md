@@ -111,6 +111,7 @@ Wrapping the root view in `PanelChrome` gives the panel its translucent backgrou
 | `GlassIconButton`       | Capsule icon button with interactive Liquid Glass on macOS 26 and later, and a primary-colored bordered surface on earlier systems. |
 | `MeterRow` / `MeterBar` | Metered quantity (title, tinted value, capsule bar, optional footnote). The bar keeps its tint when the window is not key, unlike a tinted `ProgressView`.                  |
 | `SectionLabel`          | Small field label; renders its text uppercase, so callers pass normal-case strings.                                                                                         |
+| `PanelSection`          | Titled surface with an optional description and caller-supplied content. See the [compact settings guide](docs/compact-settings.md) for native control composition. |
 | `inputChrome(focused:)` | View modifier wrapping a text input in a bordered container with an accent highlight on focus.                                                                              |
 
 ### Notifications

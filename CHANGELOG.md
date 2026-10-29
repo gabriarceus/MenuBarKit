@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `PanelSection` for compact titled surfaces with an optional description and caller-supplied native controls. See the [settings composition guide](docs/compact-settings.md).
 - Native panel and icon-button surfaces for macOS 15, preserving Liquid Glass on macOS 26 and later. The package deployment target is now macOS 15. Build and focused UI checks ran on macOS 27.0.1; runtime verification on macOS 15 and 26 remains pending. See the [verification summary](docs/macos-compatibility.md).
 
 ## [1.1.0] - 2026-08-25
