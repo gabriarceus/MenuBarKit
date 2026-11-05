@@ -28,6 +28,16 @@ final class LocalizerTests: XCTestCase {
         XCTAssertEqual(localizer("greeting %d", 3), "greeting 3")
     }
 
+    func testEscapedPercentIsNotCountedAsAnArgument() {
+        let localizer = Localizer(bundle: makeBundle(), language: nil)
+        XCTAssertEqual(localizer("%d%% done", 40), "40% done")
+    }
+
+    func testPackageStringsFollowTheRequestedLanguage() {
+        XCTAssertEqual(MeterBar.progressLabel(language: "it"), "avanzamento")
+        XCTAssertEqual(MeterBar.progressLabel(language: "en"), "progress")
+    }
+
     func testNoArgumentsKeepsFormatVerbatim() {
         let localizer = Localizer(bundle: makeBundle(), language: nil)
         XCTAssertEqual(localizer("100% done"), "100% done")

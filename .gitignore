@@ -10,8 +10,9 @@ xcuserdata/
 # macOS
 .DS_Store
 
-# Local tooling / editors
+# Local tooling / editors / AI
 .env*
 .vscode/
 .idea/
 .claude
+.serena/

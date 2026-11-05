@@ -1,18 +1,15 @@
 # MenuBarKit
 
-A Swift package with the shared UI foundation for macOS menu bar apps, so they all read as one design language: a borderless floating panel, Liquid Glass chrome, design tokens, and a small set of reusable SwiftUI components.
+A Swift package with the shared UI foundation for macOS menu bar apps, so they read as one design language: a borderless floating panel, Liquid Glass chrome, design tokens, and a small set of reusable SwiftUI components.
 
-**What it gives you:** the panel that drops down from the menu bar (window setup, glass background, sizing, positioning, outside-click dismissal), plus components to fill it — headers, icon buttons, meters, field labels — on top of shared spacing/radius/typography/color tokens. Helpers for user notifications and localization come along, since menu bar apps tend to need both.
+**What it gives you:** the panel that drops down from the menu bar (window setup, glass background, sizing, positioning, outside-click dismissal), components to fill it, and shared spacing, radius, typography, and color tokens. Optional helpers cover the status item, edit commands, launch at login, notifications, contextual help, and localization.
 
-**What it does not do:** it is not an app template. You still create the `NSStatusItem`, own the app delegate, and write your own screens; MenuBarKit provides the shared panel, UI pieces, and optional platform helpers.
-
-Optional [app-management helpers](docs/app-management.md) connect a caller-owned status item and panel, fit panel positions to a screen, supply native edit commands, and expose launch-at-login state. [Global shortcuts](docs/global-shortcuts.md) stay in the consumer through KeyboardShortcuts.
+**What it does not do:** it is not an app template. Your app owns the app delegate, the status item, its screens, and its data. MenuBarKit has no external dependencies.
 
 ## Requirements
 
-- Declared deployment target: macOS 15. Panels and icon buttons use Liquid Glass on macOS 26 and later, and native fallback surfaces on earlier systems. Runtime verification on macOS 15 remains pending; the current tested runtime is macOS 27.0.1.
-- Xcode 26 / Swift 6.2 or newer, with the macOS 26 SDK or newer
-- No external dependencies
+- macOS 15 or later. Panels and icon buttons use Liquid Glass on macOS 26 and later, and native fallback surfaces on earlier systems.
+- Xcode 26 / Swift 6.2 or newer, with the macOS 26 SDK or newer.
 
 ## Installation
 
@@ -21,9 +18,9 @@ Add the package to your app's `Package.swift`:
 ```swift
 let package = Package(
     name: "MyApp",
-    platforms: [.macOS(.v26)], // Match the requirements of the MenuBarKit release you use.
+    platforms: [.macOS(.v15)],
     dependencies: [
-        .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.0.0")
+        .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.2.0")
     ],
     targets: [
         .executableTarget(name: "MyApp", dependencies: ["MenuBarKit"])
@@ -31,23 +28,11 @@ let package = Package(
 )
 ```
 
-In an Xcode project instead: _File ▸ Add Package Dependencies…_ and paste the same URL.
-
-The example keeps macOS 26 for compatibility with the 1.0 and 1.1 releases. The macOS 15 fallback is currently unreleased in this checkout. To evaluate it locally, use `.package(path: "../MenuBarKit")`; an app can declare `.macOS(.v15)` after auditing its own APIs, dependencies, bundle metadata, and packaging. A successful build does not replace testing on that runtime.
-
-## Platform support policy
-
-macOS 26 and later remain the primary platform. Existing panels and icon buttons select their native surface automatically. Older material differs from Liquid Glass; tint opacity is preserved, and strong tints can reduce contrast with similarly colored content. The current declared floor is macOS 15, while runtime verification from this work covers macOS 27.0.1 only. macOS 15 and macOS 26 checks remain pending.
-
-New capabilities may require a newer macOS version through `@available`. A package deployment target does not require every future API to work on that minimum. Keep the modern SDK and Swift tools requirement separate from the runtime floor.
-
-An older-system fallback should remain small and useful. Reassess the minimum if maintaining it would require duplicated window management, state, or architecture. Raising the floor is an explicit release decision with migration notes; there is no automatic annual support window. Each consumer remains responsible for its own compatibility. Lowering MenuBarKit's target does not lower DisplayAnchor's macOS 26 requirement.
-
-See the [compatibility verification summary](docs/macos-compatibility.md) for recorded results and remaining checks.
+In an Xcode project: _File ▸ Add Package Dependencies…_ and paste the same URL.
 
 ## Usage
 
-A menu bar app is an accessory app (no Dock icon, no main window): set `LSUIElement` to `true` in its `Info.plist`, or call `NSApp.setActivationPolicy(.accessory)` at launch. From there, the app delegate owns a status item and a `MenuBarPanel`:
+A menu bar app is an accessory app with no Dock icon: set `LSUIElement` to `true` in its `Info.plist`, or call `NSApp.setActivationPolicy(.accessory)` at launch. The app delegate creates a status item and a `MenuBarPanel`, and a `StatusItemController` connects them:
 
 ```swift
 import AppKit
@@ -58,111 +43,87 @@ enum MyScreen: Hashable { case main, settings }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem!
-    private var panel: MenuBarPanel!
     private let navigation = PanelNavigation<MyScreen>(initial: .main)
+    private var statusItem: NSStatusItem?
+    private var controller: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "gauge", accessibilityDescription: nil)
-        statusItem.button?.target = self
-        statusItem.button?.action = #selector(toggle)
-
-        panel = MenuBarPanel(
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let panel = MenuBarPanel(
             rootView: PanelChrome { MyRootView(navigation: navigation) },
             width: Theme.defaultPanelWidth
         )
         panel.onDismiss = { [weak self] in self?.navigation.screen = .main }
-    }
 
-    @objc private func toggle() {
-        if panel.isVisible {
-            panel.dismiss()
-        } else if let button = statusItem.button, let window = button.window {
-            // Top-left corner of the panel: just below the status item, aligned to its left edge.
-            let onScreen = window.convertToScreen(button.convert(button.bounds, to: nil))
-            panel.present(at: NSPoint(x: onScreen.minX, y: onScreen.minY - 4))
+        let controller = StatusItemController(statusItem: statusItem, panel: panel)
+        if let icon = NSImage(systemSymbolName: "gauge", accessibilityDescription: nil) {
+            controller.update(icon: icon, accessibilityLabel: "MyApp")
         }
+        self.statusItem = statusItem
+        self.controller = controller
     }
 }
 ```
 
-Wrapping the root view in `PanelChrome` gives the panel its translucent background and rounded shape — `MenuBarPanel` itself is transparent and borderless.
+`PanelChrome` gives the content its translucent background and rounded shape; `MenuBarPanel` itself is transparent and borderless. To place the panel yourself, skip the controller and call `panel.present(at:)` with a top-left point in screen coordinates.
 
-## Modules
+## API
 
 ### Panel
 
-| Type                      | Purpose                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MenuBarPanel`            | Borderless, non-activating floating `NSPanel` that presents popover-style content without anchoring to a view — it stays put even if a menu bar manager (Ice, Bartender, …) hides the status icon while open. Sizes itself from the SwiftUI content, keeps the top-left corner pinned while growing, dismisses on clicks outside the app, and can become key so text fields work. |
-| `PanelChrome`             | Liquid Glass on macOS 26 and later, with native popover material on earlier systems. Optional `tint:` colors the translucent surface (the color's opacity controls the strength).                                                                                                                                                                                                             |
-| `PanelNavigation<Screen>` | Observable current-screen state (`@Published var screen`), drivable from both SwiftUI (back button) and the panel owner (reset on dismiss).                                                                                                                                                                                                                                       |
+| Type                      | Purpose                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MenuBarPanel`            | Borderless, non-activating floating panel. Sizes itself from its SwiftUI content, keeps its top-left corner pinned while growing, dismisses on outside clicks, and can become key for text fields. |
+| `PanelChrome`             | Liquid Glass on macOS 26 and later, native popover material on earlier systems. An optional `tint` colors the surface; the color's opacity sets the strength.          |
+| `PanelNavigation<Screen>` | Observable current screen, driven by both SwiftUI and the panel's owner.                                                                                               |
 
-### DesignSystem
+### Design system
 
-`Theme` — shared tokens: `Spacing` (`xs`/`s`/`m`/`l`), `Radius` (`field`/`card`/`panel`), `Colors` (status colors + bar track), `Typography` (row title/value, field label, footnote), and `defaultPanelWidth`.
-
-`SystemAccentObserver` — `ObservableObject` publishing the current macOS accent color as `color`, updated live when it changes in System Settings (the "Multicolor" accent resolves to the default blue).
+| Type                   | Purpose                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `Theme`                | `Spacing`, `Radius`, `Colors`, `Typography`, and `defaultPanelWidth`.                                                |
+| `SystemAccentObserver` | Publishes the current macOS accent color and follows changes in System Settings. The Multicolor accent resolves to blue. |
 
 ### Components
 
-| Component               | Purpose                                                                                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PanelHeader`           | Header row: optional leading accessory, headline title, trailing actions.                                                                                                   |
-| `GlassIconButton`       | Capsule icon button with interactive Liquid Glass on macOS 26 and later, and a primary-colored bordered surface on earlier systems. |
-| `MeterRow` / `MeterBar` | Metered quantity (title, tinted value, capsule bar, optional footnote). The bar keeps its tint when the window is not key, unlike a tinted `ProgressView`.                  |
-| `SectionLabel`          | Small field label; renders its text uppercase, so callers pass normal-case strings.                                                                                         |
-| `PanelSection`          | Titled surface with an optional description and caller-supplied content. See the [compact settings guide](docs/compact-settings.md) for native control composition. |
-| `panelHelp(_:)` / `panelHelpHost(isActive:)` | Delayed, root-hosted contextual help that preserves accessible names. See the [help guide](docs/contextual-help.md). |
-| `inputChrome(focused:)` | View modifier wrapping a text input in a bordered container with an accent highlight on focus.                                                                              |
-
-For empty results, active work, and failures, see the [native compact feedback guide](docs/compact-feedback.md).
+| Component                                          | Purpose                                                                                                                      |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `PanelHeader`                                      | Header row with an optional leading accessory, a headline title, and trailing actions.                                       |
+| `GlassIconButton`                                  | Capsule icon button with interactive Liquid Glass, and a bordered capsule on earlier systems.                                |
+| `MeterRow` / `MeterBar`                            | Metered quantity with a title, a tinted value, a capsule bar, and an optional footnote. The bar keeps its tint in a window that is not key. |
+| `SectionLabel`                                     | Small field label shown in uppercase; pass normal-case text.                                                                 |
+| `PanelSection`                                     | Titled surface with caller-supplied content and an optional description. See the [compact settings guide](docs/compact-settings.md) and the [compact feedback guide](docs/compact-feedback.md). |
+| `panelHelp(_:)` / `panelHelpHost(isActive:delay:)` | Delayed, root-hosted contextual help that keeps accessible names. See the [contextual help guide](docs/contextual-help.md).  |
+| `inputChrome(focused:)`                            | Bordered container for a text input, with an accent border while focused.                                                   |
 
 ### App management
 
-| Type | Purpose |
-| --- | --- |
-| `StatusItemController` | Optional primary/secondary actions, presentation state, template icons, text, and a notification dot for a caller-owned status item and panel. |
-| `PanelPlacement` | Status-item geometry or main-screen fallback, plus usable bounds for caller-owned content sizing and scrolling. |
-| `EditMenu` / `panelEscape(cancelEditing:dismiss:)` | Opt-in responder-chain edit commands and child-first Escape handling. |
-| `LoginItem` | Native ServiceManagement status, explicit registration requests, errors, and refresh after app activation. |
+| Type                                               | Purpose                                                                                                   |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `StatusItemController`                             | Primary and secondary actions, presentation state, and a template icon with optional text and a dot for a caller-owned status item and panel. |
+| `PanelPlacement`                                   | Position below the status item, or a main-screen fallback, with usable bounds for content sizing.         |
+| `EditMenu` / `panelEscape(cancelEditing:dismiss:)` | Responder-chain edit commands and child-first Escape handling.                                            |
+| `LoginItem`                                        | Launch-at-login status, explicit registration, errors, and refresh after app activation.                  |
 
-See the [ownership and integration guide](docs/app-management.md). These helpers add no mandatory external dependencies.
+See the [app management guide](docs/app-management.md). For global shortcuts, see the [global shortcuts guide](docs/global-shortcuts.md).
 
 ### Notifications
 
-`Notifier` — `UNUserNotificationCenter` wrapper: `requestAuthorizationIfNeeded()` with a published `authorizationDenied` flag, immediate `send(title:body:)`, and re-drivable one-shot `schedule(title:body:at:identifier:)` / `cancelScheduled(identifier:)` (plus `cancelScheduled(prefix:excluding:)` to clear a family of pending notifications). Every entry point no-ops when the process is not running from a `.app` bundle, because the notification center aborts under `swift run`.
+`Notifier` wraps the user notification center: authorization with a published `authorizationDenied` flag, immediate `send(title:body:)`, one-shot `schedule(title:body:at:identifier:)`, and `cancelScheduled` by identifier or prefix. Every call does nothing outside a `.app` bundle, where the notification center would abort.
 
 ### Localization
 
-`Localizer` — resolves UI strings from a bundle's `.lproj` tables, with an optional language override (empty/`nil` follows the system). Missing keys fall back to the key itself. Inject it once per app via `EnvironmentValues.localizer` and read it in views with `@Environment(\.localizer)`.
+| API                                     | Purpose                                                                                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Localizer`                             | Strings from a bundle's `.lproj` tables, with an optional forced language. Missing keys return the key. Inject it with `EnvironmentValues.localizer`. |
+| `Bundle.languageOptions(systemLabel:)`  | A system-follow entry plus each bundled language in its own name, for a language picker of `AppLanguageOption` values.            |
+| `Bundle.resourceBundle(named:fallback:)` | A SwiftPM resource bundle inside the built app, or the fallback when running from the build directory.                           |
 
-`Bundle.languageOptions(systemLabel:)` — lists a bundle's localizations (each in its own name) plus a leading system-follow entry, ready to drive a language `Picker` via `AppLanguageOption`. Each app keeps its own `Localizable.strings` under `Resources/*.lproj`; adding a language is a copy-and-translate with no code change.
+## Documentation
 
-`Bundle.resourceBundle(named:fallback:)` — finds a SwiftPM resource bundle inside the built `.app`, falling back to `Bundle.module` when running straight from the build directory (the fallback is an autoclosure on purpose: `Bundle.module` probes an absolute build path that must not be touched in a shipped app).
-
-## Implementation notes
-
-Behaviour that looks arbitrary but is deliberate:
-
-- **Window shadow vs glass**: SwiftUI `glassEffect` on a borderless clear panel leaves faintly opaque pixels across the hosting view's full rectangular bounds, so AppKit casts the window shadow for a rectangle — a dark rim with squared corners. `MenuBarPanel` masks the hosting view's layer to the panel corner radius and invalidates the shadow after presenting/resizing.
-- **Positioning**: content-driven resizes re-anchor the top-left corner (`setFrameTopLeftPoint` on `didResize`), so the panel grows downward instead of moving its top edge.
-- **Plan B (not implemented)**: if glass sampling ever misbehaves on the borderless panel (edge artifacts, missing shadow), the escape hatch is to bridge AppKit's `NSGlassEffectView` as the content wrapper instead of the `glassEffect` modifier.
-
-## Local development
-
-Apps built on MenuBarKit (e.g. [DisplayAnchor](https://github.com/gabriarceus/DisplayAnchor)) declare a conditional dependency: a sibling `MenuBarKit` checkout is used automatically when present, otherwise the package is resolved from GitHub. So cloning this repo next to an app is enough to edit the library and rebuild the app with no manifest change:
-
-```
-git-projects/
-├── MenuBarKit/
-└── DisplayAnchor/
-```
-
-SwiftPM caches the evaluated manifest, so after **adding or removing** the sibling checkout run `swift package reset` once in the app (or `touch Package.swift`) to make it re-evaluate. Day to day, with the sibling always present, nothing extra is needed.
-
-API changes: commit here, then tag a new semver (`git tag 1.1.0 && git push origin 1.1.0`) so outside consumers pick it up. Local builds don't wait for a tag.
+- [Architecture](docs/architecture.md): source map, ownership, panel behavior, and platform support.
+- [Development](docs/development.md): local work with a consumer app, checks, and releases.
+- [Contributing](CONTRIBUTING.md).
 
 ## License
 

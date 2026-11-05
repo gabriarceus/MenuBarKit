@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 
 @testable import MenuBarKit
@@ -7,7 +8,7 @@ final class PanelHelpTests: XCTestCase {
     func testReleaseCancelsPendingPresentation() async {
         var presentation: HelpPresentation? = HelpPresentation()
         let released = { [weak presentation] in presentation }
-        presentation?.schedule()
+        presentation?.schedule(after: .milliseconds(350))
         let pending = presentation?.pendingTask
         presentation = nil
         await pending?.value
@@ -17,7 +18,7 @@ final class PanelHelpTests: XCTestCase {
     @MainActor
     func testExitOrRemovalCancelsPendingPresentation() async {
         let presentation = HelpPresentation()
-        presentation.schedule()
+        presentation.schedule(after: .milliseconds(350))
         let pending = presentation.pendingTask
         presentation.cancel()
         await pending?.value
@@ -28,9 +29,9 @@ final class PanelHelpTests: XCTestCase {
     @MainActor
     func testNewHoverReplacesPendingPresentation() async {
         let presentation = HelpPresentation()
-        presentation.schedule()
+        presentation.schedule(after: .milliseconds(350))
         let previous = presentation.pendingTask
-        presentation.schedule()
+        presentation.schedule(after: .milliseconds(350))
         let current = presentation.pendingTask
         await previous?.value
         XCTAssertFalse(presentation.isPresented)
@@ -38,6 +39,29 @@ final class PanelHelpTests: XCTestCase {
         XCTAssertTrue(presentation.isPresented)
         presentation.cancel()
         XCTAssertFalse(presentation.isPresented)
+    }
+
+    @MainActor
+    func testPresentationWaitsForTheGivenDelay() async {
+        let presentation = HelpPresentation()
+        let start = ContinuousClock.now
+        presentation.schedule(after: .milliseconds(200))
+        await presentation.pendingTask?.value
+        XCTAssertTrue(presentation.isPresented)
+        XCTAssertGreaterThanOrEqual(ContinuousClock.now - start, .milliseconds(200))
+    }
+
+    @MainActor
+    func testBubbleFitsShortTextAndWrapsLongText() {
+        func size(_ text: String) -> CGSize {
+            NSHostingController(rootView: HelpBubbleLabel(text: text, maxWidth: 260, maxHeight: 500))
+                .sizeThatFits(in: CGSize(width: 1000, height: 1000))
+        }
+        let short = size("Settings")
+        let long = size(String(repeating: "Long help text that wraps. ", count: 8))
+        XCTAssertLessThan(short.width, 100)
+        XCTAssertLessThanOrEqual(long.width, 260)
+        XCTAssertGreaterThan(long.height, short.height * 2)
     }
 
     func testPlacementStaysInsideEveryEdge() {

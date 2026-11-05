@@ -71,11 +71,3 @@ An unbundled process never accesses the native service or registers successfully
 The adapter refreshes on app activation, including return from System Settings. A consumer can call `refresh()` explicitly as well. Format native operation errors and the adapter's unavailable reasons with the app's localized UI. Opening System Settings changes no registration by itself.
 
 For global shortcuts, use the separate [consumer integration guide](global-shortcuts.md).
-
-## Verification
-
-On 2026-10-29, all 35 XCTest tests passed on macOS 27.2. Native checks cover interaction restoration, release, cancellation, idempotent presentation, existing dismissal callbacks, image/text/name updates, the original-event click guard, screen-change handling, fitted resizing, and unchanged explicit-coordinate presentation. Geometry tests cover negative origins, missing anchors, display removal, and oversized content. Command checks preserve existing menus and give child cancellation priority. Login checks use a fake service for state mapping, approval, errors, unbundled execution, activation refresh, and release.
-
-An isolated accessory-app bundle verified select-all, cut, copy, paste, undo, and redo in a real panel. The user confirmed primary and secondary status-item actions, reachable scrolling content after growth, and Escape cancelling the child before closing the panel. The temporary bundle's native login status was `notFound`, exposed as `unavailable(.serviceNotFound)`; real registration was not changed. Enabled and approval-pending login outcomes were verified with the fake service.
-
-Runtime coverage is macOS 27.2. Physical display removal, macOS 15/26 checks, live login registration from an installed app, and full VoiceOver spoken output remain additional verification. The existing [compatibility track](macos-compatibility.md) stays open for its recorded checks.

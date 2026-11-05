@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import ServiceManagement
 
+/// Why login registration is unavailable.
 public enum LoginItemUnavailableReason: Equatable, Sendable {
     case notBundled, serviceNotFound, unsupportedServiceStatus
 }
@@ -12,6 +13,7 @@ public enum LoginItemStatus: Equatable, Sendable {
     case unavailable(LoginItemUnavailableReason)
 }
 
+/// Error thrown by `LoginItem.setEnabled(_:)` when registration is unavailable.
 public enum LoginItemError: Error {
     case unavailable(LoginItemUnavailableReason)
 }
@@ -19,6 +21,7 @@ public enum LoginItemError: Error {
 /// Opt-in main-app login registration. Construction and activation refresh status without registering.
 @MainActor
 public final class LoginItem: NSObject, ObservableObject {
+    /// Registration state as of the last refresh.
     @Published public private(set) var status: LoginItemStatus = .unavailable(.notBundled)
     private let service: any LoginService
     private let isBundled: Bool

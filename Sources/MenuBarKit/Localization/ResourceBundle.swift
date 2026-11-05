@@ -1,15 +1,15 @@
 import Foundation
 
 public extension Bundle {
-    /// Resolves the SwiftPM resource bundle named `name` (without the `.bundle`
-    /// extension) from the main bundle's Resources directory, falling back to
-    /// `fallback` when it is not there (e.g. when running straight from the
-    /// build directory). The fallback is evaluated lazily on purpose: SwiftPM's
-    /// generated `Bundle.module` accessor probes the absolute build path baked
-    /// into the binary, a filesystem read that must not happen in a bundled app.
+    /// The SwiftPM resource bundle `name` (without `.bundle`) in the main bundle's Resources
+    /// directory, or `fallback` when it is missing there, as in a run from the build directory.
+    /// `fallback` is evaluated only in that case.
     static func resourceBundle(named name: String, fallback: @autoclosure () -> Bundle) -> Bundle {
+        // SwiftPM's generated `Bundle.module` probes the absolute build path baked into the binary;
+        // a shipped app must not read it.
         if let url = Bundle.main.resourceURL?.appendingPathComponent("\(name).bundle"),
-           let bundle = Bundle(url: url) {
+            let bundle = Bundle(url: url)
+        {
             return bundle
         }
         return fallback()

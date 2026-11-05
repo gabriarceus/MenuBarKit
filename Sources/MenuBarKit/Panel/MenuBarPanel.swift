@@ -1,18 +1,18 @@
 import AppKit
 import SwiftUI
 
-/// A floating panel that presents popover-style content without anchoring to a
-/// view. Unlike `NSPopover`, it does not track the status item, so once shown it
-/// stays at its position even if a menu bar manager (Ice, Bartender, …) hides the
-/// icon while it is open. It resizes to fit its SwiftUI content while keeping its
-/// top-left corner fixed, and dismisses on a mouse-down outside its bounds.
+/// A borderless floating panel for popover-style content. It does not track the
+/// status item, so it stays in place when a menu bar manager hides the icon. It
+/// sizes itself to its SwiftUI content with the top-left corner fixed, and
+/// dismisses on a mouse-down in another app.
 public final class MenuBarPanel: NSPanel {
-    /// Invoked right after the panel dismisses itself, so the owner can debounce a
-    /// status-item click that would otherwise immediately reopen it.
+    /// Called after every dismissal, once the panel is hidden.
     public var onDismiss: (() -> Void)?
 
     private var clickMonitor: Any?
+    /// Returns true for an outside click that must not dismiss the panel.
     var ignoreOutsideClick: ((NSEvent) -> Bool)?
+    /// Called with true on presentation and false on dismissal.
     var presentationChanged: ((Bool) -> Void)?
 
     /// Top-left corner (screen coordinates) the panel is pinned to. While set,
@@ -21,6 +21,7 @@ public final class MenuBarPanel: NSPanel {
     private var anchorTopLeft: NSPoint?
     private var fittingBounds: NSRect?
 
+    /// Creates a hidden panel that hosts `rootView`, with an initial width of `width` points.
     public init(rootView: some View, width: CGFloat) {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: width, height: 200),
@@ -63,8 +64,7 @@ public final class MenuBarPanel: NSPanel {
         )
     }
 
-    /// Borderless windows do not become key by default, but the content needs key
-    /// status for text editing (e.g. account fields in a settings form).
+    /// Always true: borderless windows are not key by default, and text fields need key status.
     public override var canBecomeKey: Bool { true }
 
     /// Re-pins the top-left after a content-driven resize. Moving only the origin
@@ -84,7 +84,8 @@ public final class MenuBarPanel: NSPanel {
         show(at: topLeft)
     }
 
-    /// Fits the position during presentation and growth. The caller constrains content size and scrolling.
+    /// Like `present(at:)`, and keeps the panel inside `bounds` on presentation and on every resize.
+    /// The caller constrains content size and scrolling.
     public func present(at topLeft: NSPoint, fittingWithin bounds: NSRect) {
         fittingBounds = bounds
         show(at: topLeft)

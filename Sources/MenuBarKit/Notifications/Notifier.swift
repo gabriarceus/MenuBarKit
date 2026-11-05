@@ -1,11 +1,11 @@
 import AppKit
 import UserNotifications
 
-/// UNUserNotificationCenter wrapper. All entry points no-op when the process is not
-/// running from a .app bundle, because the notification center aborts in that case
-/// (e.g. under `swift run`).
+/// Wrapper around `UNUserNotificationCenter`. Every method does nothing outside a `.app` bundle,
+/// where the notification center aborts.
 @MainActor
 public final class Notifier: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
+    /// True when the user denied notifications for the app.
     @Published public private(set) var authorizationDenied = false
 
     /// Called when the notification center rejects a delivery request. The
@@ -21,6 +21,8 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
 
+    /// Sets the notifier as the center's delegate, asks for alert and sound permission when it is
+    /// not decided yet, and updates `authorizationDenied`.
     public func requestAuthorizationIfNeeded() {
         guard isBundled else { return }
         UNUserNotificationCenter.current().delegate = self
@@ -36,11 +38,12 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
             case .authorized, .provisional, .ephemeral:
                 Task { @MainActor in self?.authorizationDenied = false }
             @unknown default:
-                break
+                NSLog("Unknown notification authorization status: %d", settings.authorizationStatus.rawValue)
             }
         }
     }
 
+    /// Delivers a notification now. A rejected request goes to `onDeliveryError`.
     public func send(title: String, body: String) {
         guard isBundled else {
             NSLog("Notification suppressed (not running from a .app bundle): %@ — %@", title, body)
@@ -59,10 +62,9 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
 
-    /// Schedules a one-shot notification to fire at `date`, replacing any pending request that
-    /// shares `identifier`. A non-future `date` cancels the pending request instead, so callers
-    /// can re-drive scheduling on every poll without tracking prior state. Delivery is handled by
-    /// the system, so the alert fires at the wall-clock time even if the app is idle or asleep.
+    /// Schedules a one-shot notification at `date`, replacing a pending request with the same
+    /// `identifier`. A `date` that is not in the future removes that pending request instead. The
+    /// system delivers it at that wall-clock time, also while the app is idle.
     public func schedule(title: String, body: String, at date: Date, identifier: String) {
         guard isBundled else {
             NSLog(
@@ -99,9 +101,8 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         ])
     }
 
-    /// Cancels every pending scheduled notification whose identifier starts with `prefix`,
-    /// except `excluding`. Pending requests persist in the notification center across app
-    /// restarts, so this also sweeps requests scheduled by a previous run of the app.
+    /// Cancels every pending notification whose identifier starts with `prefix`, except `excluding`,
+    /// including requests left by an earlier run of the app.
     public func cancelScheduled(prefix: String, excluding: String? = nil) {
         guard isBundled else { return }
         Task {
@@ -114,7 +115,7 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
 
-    /// Show banners even while the app is active (e.g. with the settings screen focused).
+    /// Shows banners and plays sounds while the app is active.
     nonisolated public func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,

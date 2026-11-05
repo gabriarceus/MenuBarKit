@@ -7,7 +7,7 @@ enum PanelEscape {
 }
 
 extension View {
-    /// Handles Escape after child cancellation. Return true from cancelEditing when it consumes Escape.
+    /// Handles Escape: calls `cancelEditing` first and calls `dismiss` only when it returns false.
     public func panelEscape(
         cancelEditing: @escaping () -> Bool = { false }, dismiss: @escaping () -> Void
     ) -> some View {

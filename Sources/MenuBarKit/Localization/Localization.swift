@@ -20,16 +20,17 @@ public struct Localizer: @unchecked Sendable {
         }
     }
 
-    /// The localized value for [key], falling back to [key] itself when missing.
-    /// [arguments] are substituted into `printf`-style format specifiers; a
+    /// The localized value for `key`, falling back to `key` itself when missing.
+    /// `arguments` are substituted into `printf`-style format specifiers; a
     /// mismatch between arguments and specifiers returns the unformatted string
-    /// instead of crashing.
+    /// instead of crashing. Without arguments the string is returned verbatim.
     public func string(_ key: String, arguments: [CVarArg] = []) -> String {
         let format = bundle.localizedString(forKey: key, value: key, table: nil)
         guard !arguments.isEmpty else { return format }
         return (try? format.substituting(arguments)) ?? format
     }
 
+    /// Same as `string(_:arguments:)`, with variadic arguments.
     public func callAsFunction(_ key: String, _ arguments: CVarArg...) -> String {
         string(key, arguments: arguments)
     }
@@ -47,7 +48,7 @@ extension EnvironmentValues {
     }
 }
 
-/// A selectable UI language: an empty [code] follows the system.
+/// A selectable UI language: an empty `code` follows the system.
 public struct AppLanguageOption: Identifiable, Sendable {
     public let code: String
     public let name: String
@@ -79,14 +80,14 @@ extension Bundle {
 }
 
 extension String {
-    /// Substitutes `printf`-style specifiers, returning the receiver unchanged
-    /// when the arguments do not match the format (instead of crashing).
+    /// Substitutes `printf`-style specifiers. Throws when the argument count does not match them.
     fileprivate func substituting(_ arguments: [CVarArg]) throws -> String {
         try String(format: self, locale: Locale.current, arguments: validated(arguments))
     }
 
     private func validated(_ arguments: [CVarArg]) throws -> [CVarArg] {
-        let specifierCount = components(separatedBy: "%").count - 1
+        // "%%" is a literal percent sign, not an argument.
+        let specifierCount = replacingOccurrences(of: "%%", with: "").components(separatedBy: "%").count - 1
         guard specifierCount == arguments.count else {
             throw FormatMismatchError(expected: specifierCount, actual: arguments.count)
         }
