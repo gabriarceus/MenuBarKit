@@ -31,8 +31,15 @@ public struct MeterBar: View {
 
     /// The spoken bar name in `language`, or in the system language when nil.
     static func progressLabel(language: String?) -> String {
-        Localizer(bundle: resources, language: language)("progress")
+        let key = language ?? ""
+        if let label = progressLabels[key] { return label }
+        let label = Localizer(bundle: resources, language: language)("progress")
+        progressLabels[key] = label
+        return label
     }
+
+    /// Labels already resolved, keyed by language, so frequent redraws skip the bundle lookup.
+    private static var progressLabels: [String: String] = [:]
 
     private static let resources = Bundle.resourceBundle(named: "MenuBarKit_MenuBarKit", fallback: .module)
 }

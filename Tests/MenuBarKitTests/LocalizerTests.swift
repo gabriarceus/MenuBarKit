@@ -33,6 +33,7 @@ final class LocalizerTests: XCTestCase {
         XCTAssertEqual(localizer("%d%% done", 40), "40% done")
     }
 
+    @MainActor
     func testPackageStringsFollowTheRequestedLanguage() {
         XCTAssertEqual(MeterBar.progressLabel(language: "it"), "avanzamento")
         XCTAssertEqual(MeterBar.progressLabel(language: "en"), "progress")

@@ -55,7 +55,7 @@ The commands use nil targets and standard key equivalents, allowing native field
 
 Apply `.panelEscape(cancelEditing:dismiss:)` to the root that owns cancellation. Return true when a child edit consumes Escape; only a false result dismisses the panel. Keep the child's draft and focus in the app. The modifier does not install a global event monitor or change the panel's default key handling.
 
-A panel stays key, and a click on plain SwiftUI content takes no focus, so a text field keeps editing after a click elsewhere in the panel. Apply `.onClickOutsideTextInput(isActive:perform:)` to the field or its row and end the edit in `perform`, for example by clearing its focus state. The modifier installs a local event monitor only while `isActive` is true and removes it when the view disappears. A click on a text field or its field editor does not call `perform`, and every click still reaches its target.
+A panel stays key, and a click on plain SwiftUI content takes no focus, so a text field keeps editing after a click elsewhere in the panel. Apply `.onClickOutsideTextInput(isActive:perform:)` to the field, after its chrome, and end the edit in `perform`, for example by clearing its focus state. A click inside the modified view, padding included, or on a text field or its field editor does not call `perform`, and every click still reaches its target. The modifier installs a local event monitor only while `isActive` is true and removes it when `isActive` becomes false or the view disappears. Hiding the panel can keep the view alive, so set `isActive` to false when the panel hides.
 
 ## Launch at login
 

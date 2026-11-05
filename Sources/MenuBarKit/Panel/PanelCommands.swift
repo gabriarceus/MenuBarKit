@@ -22,37 +22,63 @@ extension View {
         onExitCommand { PanelEscape.handle(cancelEditing: cancelEditing, dismiss: dismiss) }
     }
 
-    /// While `isActive`, calls `perform` for each left click in the app's windows
-    /// that does not land on a text field or its field editor. The click still
-    /// reaches its target.
+    /// While `isActive`, calls the latest `perform` for each left click in the app's windows
+    /// that lands neither inside this view nor on a text field or its field editor.
+    /// The click still reaches its target. The monitor stays installed until `isActive`
+    /// becomes false or the view disappears, so set `isActive` to false when the panel hides.
     public func onClickOutsideTextInput(isActive: Bool, perform: @escaping () -> Void) -> some View {
         modifier(OutsideTextClickModifier(isActive: isActive, perform: perform))
     }
+}
+
+/// Values the event monitor reads at click time, refreshed on every body pass.
+@MainActor
+private final class OutsideTextClickState {
+    var perform: () -> Void = {}
+    /// The modified view's frame in its window's content view, top-left origin.
+    var frame: CGRect = .zero
+    var monitor: Any?
 }
 
 private struct OutsideTextClickModifier: ViewModifier {
     let isActive: Bool
     let perform: () -> Void
 
-    @State private var monitor: Any?
+    @State private var state = OutsideTextClickState()
 
     func body(content: Content) -> some View {
-        content
+        state.perform = perform
+        return
+            content
+            .onGeometryChange(for: CGRect.self) {
+                $0.frame(in: .global)
+            } action: {
+                state.frame = $0
+            }
             .onAppear { update(isActive) }
             .onChange(of: isActive) { _, active in update(active) }
             .onDisappear { update(false) }
     }
 
     private func update(_ active: Bool) {
-        if let monitor { NSEvent.removeMonitor(monitor) }
-        monitor = nil
+        if let monitor = state.monitor { NSEvent.removeMonitor(monitor) }
+        state.monitor = nil
         guard active else { return }
-        let perform = perform
+        let state = state
         // A panel stays key and plain SwiftUI content takes no focus, so a click
         // outside the field would leave it editing without this monitor.
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
-            let hit = event.window?.contentView?.hitTest(event.locationInWindow)
-            if !TextInputHit.isTextInput(hit) { MainActor.assumeIsolated { perform() } }
+        state.monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            MainActor.assumeIsolated {
+                guard let contentView = event.window?.contentView else { return state.perform() }
+                // `.global` frames use the hosting content view's coordinates.
+                // shortcut: the frame is not tied to a window, so a click at the same point in
+                // another window of the app counts as inside; store the window if that matters.
+                let point = contentView.convert(event.locationInWindow, from: nil)
+                let flipped =
+                    contentView.isFlipped ? point : CGPoint(x: point.x, y: contentView.bounds.height - point.y)
+                if state.frame.contains(flipped) { return }
+                if !TextInputHit.isTextInput(contentView.hitTest(event.locationInWindow)) { state.perform() }
+            }
             return event
         }
     }

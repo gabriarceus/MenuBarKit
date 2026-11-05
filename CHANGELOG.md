@@ -5,11 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-11-05
 
 ### Added
 
-- `onClickOutsideTextInput(isActive:perform:)` reports a click outside text fields, so an app can end text editing in its panel.
+- `onClickOutsideTextInput(isActive:perform:)` reports a click outside the view and outside text fields, so an app can end text editing in its panel.
 - `panelHelpHost(isActive:delay:)` sets how long the pointer must rest on a target before its help appears.
 
 ### Changed

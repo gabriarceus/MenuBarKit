@@ -38,7 +38,7 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
             case .authorized, .provisional, .ephemeral:
                 Task { @MainActor in self?.authorizationDenied = false }
             @unknown default:
-                NSLog("Unknown notification authorization status: %d", settings.authorizationStatus.rawValue)
+                NSLog("Unknown notification authorization status: %ld", settings.authorizationStatus.rawValue)
             }
         }
     }
