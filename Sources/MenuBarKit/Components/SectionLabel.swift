@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Small uppercase-style field label used above form inputs.
+/// Small secondary field label, shown in uppercase.
 public struct SectionLabel: View {
     private let text: String
 

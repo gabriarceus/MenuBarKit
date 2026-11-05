@@ -70,10 +70,4 @@ Keep long row labels flexible and vertically sized, as shown above for both `Tex
 
 ## Native alternatives
 
-Compare the layout needed by the consumer with native [`Form`](https://developer.apple.com/documentation/swiftui/form), [`Section`](https://developer.apple.com/documentation/swiftui/section), and [`LabeledContent`](https://developer.apple.com/documentation/swiftui/labeledcontent). A grouped form is useful when a scrolling settings page is wanted. In the temporary 340-point comparison, the automatic form used a control column that crowded long labels, while the grouped form added row spacing and a scroll area. `PanelSection` shares the existing compact surface without introducing a form or a control wrapper. `LabeledContent` remains the native row composition.
-
-## Verification
-
-On 2026-10-29, a temporary host on macOS 27.2 checked a 340-point composition in English and Italian, in light and dark appearance. Long titles, control labels, and descriptions wrapped; omitting a description left no extra line. Toggle, picker, and numeric-field changes reached the caller's bindings, and the disabled control stayed unchanged. Keyboard checks covered picker arrow selection and numeric text entry. The accessibility tree retained control names with hidden visual labels, values, disabled state, and section headings. The example above compiled against the local package.
-
-The package built and all 9 existing tests passed. This visual container adds no deterministic control logic or new test suite. Runtime checks on macOS 15 and 26, full keyboard focus navigation, and VoiceOver spoken output remain unverified.
+Compare the layout needed by the consumer with native [`Form`](https://developer.apple.com/documentation/swiftui/form), [`Section`](https://developer.apple.com/documentation/swiftui/section), and [`LabeledContent`](https://developer.apple.com/documentation/swiftui/labeledcontent). A grouped form is useful when a scrolling settings page is wanted. At the default panel width, an automatic form puts controls in a column that can crowd long labels, and a grouped form adds row spacing and a scroll area. `PanelSection` shares the existing compact surface without introducing a form or a control wrapper. `LabeledContent` remains the native row composition.

@@ -2,7 +2,9 @@ import AppKit
 
 /// A status-item position and usable screen bounds, inset by the panel margin.
 public struct PanelPlacement {
+    /// Top-left corner for the panel, in screen coordinates.
     public let topLeft: NSPoint
+    /// Usable area of the selected screen, inset by the panel margin.
     public let bounds: NSRect
 
     /// Resolves usable status-item geometry or a main-screen fallback. Returns nil without screens.

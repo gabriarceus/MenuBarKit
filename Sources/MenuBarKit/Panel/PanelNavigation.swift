@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Panel navigation state, observable so both SwiftUI (back button, open a
-/// sub-screen) and the panel's owner (reset on dismiss) can drive it.
+/// Observable current screen of a panel, for its SwiftUI views and its owner.
 @MainActor
 public final class PanelNavigation<Screen: Hashable>: ObservableObject {
     @Published public var screen: Screen

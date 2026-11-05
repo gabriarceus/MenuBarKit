@@ -1,8 +1,7 @@
 import SwiftUI
 
 extension View {
-    /// Wraps a text input in a clearly bordered container so fields stay legible
-    /// against the form background, highlighting with the accent color on focus.
+    /// Applies the plain text field style and draws a bordered container, with an accent border while `focused`.
     public func inputChrome(focused: Bool) -> some View {
         textFieldStyle(.plain)
             .padding(.horizontal, Theme.Spacing.s)

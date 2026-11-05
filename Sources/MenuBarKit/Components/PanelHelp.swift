@@ -1,15 +1,16 @@
 import SwiftUI
 
+/// Presentation state of one help target, set after a delay.
 @MainActor
 final class HelpPresentation: ObservableObject {
     @Published private(set) var isPresented = false
     private(set) var pendingTask: Task<Void, Never>?
 
-    func schedule() {
+    func schedule(after delay: Duration) {
         cancel()
         pendingTask = Task { [weak self] in
             do {
-                try await Task.sleep(for: .milliseconds(350))
+                try await Task.sleep(for: delay)
             } catch {
                 return
             }
@@ -30,6 +31,7 @@ final class HelpPresentation: ObservableObject {
 }
 
 enum HelpPlacement {
+    /// Bubble frame centered on `target`, above it when there is room, and clamped inside `container`.
     static func frame(target: CGRect, bubble: CGSize, container: CGSize) -> CGRect {
         let margin = min(4, max(0, min(container.width, container.height) / 2))
         let size = CGSize(
@@ -66,16 +68,32 @@ private struct HelpEnabledKey: EnvironmentKey {
     static let defaultValue = true
 }
 
+private struct HelpDelayKey: EnvironmentKey {
+    static let defaultValue = PanelHelpDefaults.delay
+}
+
+@usableFromInline
+enum PanelHelpDefaults {
+    @usableFromInline static let delay: Duration = .seconds(1)
+    static let maxWidth: CGFloat = 260
+}
+
 extension EnvironmentValues {
     fileprivate var panelHelpEnabled: Bool {
         get { self[HelpEnabledKey.self] }
         set { self[HelpEnabledKey.self] = newValue }
+    }
+
+    fileprivate var panelHelpDelay: Duration {
+        get { self[HelpDelayKey.self] }
+        set { self[HelpDelayKey.self] = newValue }
     }
 }
 
 private struct PanelHelp: ViewModifier {
     let text: String
     @Environment(\.panelHelpEnabled) private var isEnabled
+    @Environment(\.panelHelpDelay) private var delay
     @StateObject private var presentation = HelpPresentation()
     @State private var isHovered = false
 
@@ -102,7 +120,7 @@ private struct PanelHelp: ViewModifier {
 
     private func update() {
         if isHovered && isEnabled && !text.isEmpty {
-            presentation.schedule()
+            presentation.schedule(after: delay)
         } else {
             presentation.cancel()
         }
@@ -117,28 +135,58 @@ private struct HelpBubble: View {
 
     var body: some View {
         let frame = HelpPlacement.frame(target: target, bubble: size, container: container)
-        Text(text)
-            .font(.caption2)
-            .lineLimit(nil)
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .frame(
-                maxWidth: max(0, min(260, container.width - 8)),
-                maxHeight: max(0, container.height - 8)
-            )
-            .fixedSize(horizontal: false, vertical: true)
-            .clipped()
-            .background(.regularMaterial, in: .rect(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.quaternary))
-            .onGeometryChange(for: CGSize.self) {
-                $0.size
-            } action: {
-                size = $0
-            }
-            .position(x: frame.midX, y: frame.midY)
-            .opacity(size == .zero ? 0 : 1)
-            .accessibilityHidden(true)
+        HelpBubbleLabel(
+            text: text,
+            maxWidth: max(0, min(PanelHelpDefaults.maxWidth, container.width - 8)),
+            maxHeight: max(0, container.height - 8)
+        )
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: {
+            size = $0
+        }
+        .position(x: frame.midX, y: frame.midY)
+        .opacity(size == .zero ? 0 : 1)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Bubble text and chrome, as wide as the text needs up to `maxWidth`, wrapping beyond it.
+struct HelpBubbleLabel: View {
+    let text: String
+    let maxWidth: CGFloat
+    let maxHeight: CGFloat
+
+    var body: some View {
+        WidthLimit(maxWidth: maxWidth) {
+            Text(text)
+                .font(.caption2)
+                .lineLimit(nil)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+        }
+        .frame(maxHeight: maxHeight)
+        .fixedSize(horizontal: false, vertical: true)
+        .clipped()
+        .background(.regularMaterial, in: .rect(cornerRadius: 5))
+        .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.quaternary))
+    }
+}
+
+// `frame(maxWidth:)` would grow to the whole proposed width, even for one word.
+/// Proposes at most `maxWidth` to its content and takes the size the content returns.
+private struct WidthLimit: Layout {
+    let maxWidth: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let content = subviews.first else { return .zero }
+        let width = min(proposal.width ?? maxWidth, maxWidth)
+        return content.sizeThatFits(ProposedViewSize(width: width, height: nil))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }
 
@@ -148,9 +196,12 @@ extension View {
         modifier(PanelHelp(text: text))
     }
 
-    /// Hosts help outside inner scrolling clips. Set isActive to false when retained content closes.
-    public func panelHelpHost(isActive: Bool = true) -> some View {
+    /// Draws the help of `panelHelp(_:)` targets below it, outside inner scroll clipping. While
+    /// `isActive` is false, no help appears and pending help is cancelled.
+    /// - Parameter delay: how long the pointer must rest on a target before its help appears.
+    public func panelHelpHost(isActive: Bool = true, delay: Duration = PanelHelpDefaults.delay) -> some View {
         environment(\.panelHelpEnabled, isActive)
+            .environment(\.panelHelpDelay, delay)
             .overlayPreferenceValue(HelpKey.self) { value in
                 GeometryReader { proxy in
                     if isActive, let value {

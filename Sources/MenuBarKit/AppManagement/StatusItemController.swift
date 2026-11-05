@@ -4,7 +4,9 @@ import Combine
 /// Opt-in actions for one caller-owned status item and panel. Retain until disconnected.
 @MainActor
 public final class StatusItemController: NSObject, ObservableObject {
+    /// Whether the panel is shown, as reported by its `present` and `dismiss` APIs.
     @Published public private(set) var isPresented = false
+    /// Menu shown on right-click and Control-click; nil disables the secondary action.
     public var secondaryMenu: NSMenu?
 
     private let statusItem: NSStatusItem
@@ -68,7 +70,7 @@ public final class StatusItemController: NSObject, ObservableObject {
         )
     }
 
-    /// Toggles the same presentation action used by primary status-item activation.
+    /// Dismisses a shown or pending panel, otherwise presents it, as a primary click does.
     public func toggle() {
         guard isConnected else { return }
         if panel.isVisible || isPresentationPending {
@@ -97,7 +99,8 @@ public final class StatusItemController: NSObject, ObservableObject {
         panel.dismiss()
     }
 
-    /// Updates a fresh template copy. A missing text or badge reserves no space for it.
+    /// Draws a template copy of `icon` with optional trailing `text` and a notification dot, and sets
+    /// the accessibility label. A nil `text` or a false `hasBadge` reserves no space.
     public func update(
         icon: NSImage, text: String? = nil, hasBadge: Bool = false, accessibilityLabel: String
     ) {

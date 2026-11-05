@@ -55,6 +55,8 @@ The commands use nil targets and standard key equivalents, allowing native field
 
 Apply `.panelEscape(cancelEditing:dismiss:)` to the root that owns cancellation. Return true when a child edit consumes Escape; only a false result dismisses the panel. Keep the child's draft and focus in the app. The modifier does not install a global event monitor or change the panel's default key handling.
 
+A panel stays key, and a click on plain SwiftUI content takes no focus, so a text field keeps editing after a click elsewhere in the panel. Apply `.onClickOutsideTextInput(isActive:perform:)` to the field, after its chrome, and end the edit in `perform`, for example by clearing its focus state. A click inside the modified view, padding included, or on a text field or its field editor does not call `perform`, and every click still reaches its target. The modifier installs a local event monitor only while `isActive` is true and removes it when `isActive` becomes false or the view disappears. Hiding the panel can keep the view alive, so set `isActive` to false when the panel hides.
+
 ## Launch at login
 
 Retain a `LoginItem` to read the main app's actual ServiceManagement status. Initialization and app activation only refresh status. `setEnabled(_:)` is an explicit registration action; the adapter refreshes state after success or error and forwards errors to the caller. UI views should invoke it only from an explicit user action.
@@ -71,11 +73,3 @@ An unbundled process never accesses the native service or registers successfully
 The adapter refreshes on app activation, including return from System Settings. A consumer can call `refresh()` explicitly as well. Format native operation errors and the adapter's unavailable reasons with the app's localized UI. Opening System Settings changes no registration by itself.
 
 For global shortcuts, use the separate [consumer integration guide](global-shortcuts.md).
-
-## Verification
-
-On 2026-10-29, all 35 XCTest tests passed on macOS 27.2. Native checks cover interaction restoration, release, cancellation, idempotent presentation, existing dismissal callbacks, image/text/name updates, the original-event click guard, screen-change handling, fitted resizing, and unchanged explicit-coordinate presentation. Geometry tests cover negative origins, missing anchors, display removal, and oversized content. Command checks preserve existing menus and give child cancellation priority. Login checks use a fake service for state mapping, approval, errors, unbundled execution, activation refresh, and release.
-
-An isolated accessory-app bundle verified select-all, cut, copy, paste, undo, and redo in a real panel. The user confirmed primary and secondary status-item actions, reachable scrolling content after growth, and Escape cancelling the child before closing the panel. The temporary bundle's native login status was `notFound`, exposed as `unavailable(.serviceNotFound)`; real registration was not changed. Enabled and approval-pending login outcomes were verified with the fake service.
-
-Runtime coverage is macOS 27.2. Physical display removal, macOS 15/26 checks, live login registration from an installed app, and full VoiceOver spoken output remain additional verification. The existing [compatibility track](macos-compatibility.md) stays open for its recorded checks.

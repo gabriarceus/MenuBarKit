@@ -2,9 +2,8 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Publishes the current macOS accent color and keeps it up to date when the
-/// user changes it in System Settings. With the "Multicolor" accent, the
-/// system resolves the color to the default blue.
+/// Publishes the macOS accent color and follows changes made in System Settings.
+/// The Multicolor accent resolves to the default blue.
 @MainActor
 public final class SystemAccentObserver: ObservableObject {
     @Published public private(set) var color: Color
@@ -21,8 +20,9 @@ public final class SystemAccentObserver: ObservableObject {
             }
     }
 
-    /// Accent resolved to a concrete color so a change always publishes a new value.
+    /// The accent as an sRGB color.
     private static func currentAccent() -> Color {
+        // A concrete color makes every change publish a new value.
         Color(nsColor: NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? .controlAccentColor)
     }
 }

@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Capsule progress bar with an explicitly filled tint: unlike `ProgressView` with
-/// `.tint`, the color does not desaturate when the hosting window is not key (a
-/// menu-bar panel usually is not).
+/// Capsule bar filled to `fraction` with an explicit `tint`, which keeps its color in a window that is not key.
 public struct MeterBar: View {
     private let fraction: Double
     private let tint: Color
+    @Environment(\.locale) private var locale
 
     /// - Parameter fraction: fill amount in `0...1`; values outside are clamped.
     public init(fraction: Double, tint: Color) {
@@ -25,16 +24,22 @@ public struct MeterBar: View {
         }
         .frame(height: 6)
         .accessibilityElement()
-        .accessibilityLabel(Self.progressLabel)
+        .accessibilityLabel(Self.progressLabel(language: locale.language.languageCode?.identifier))
         .accessibilityValue("\(Int((min(max(fraction, 0), 1) * 100).rounded()))%")
         .accessibilityAddTraits(.updatesFrequently)
     }
 
-    private static let progressLabel: String = {
-        let bundle = Bundle.resourceBundle(
-            named: "MenuBarKit_MenuBarKit",
-            fallback: Bundle.module)
-        return NSLocalizedString(
-            "progress", bundle: bundle, comment: "Progress bar accessibility label")
-    }()
+    /// The spoken bar name in `language`, or in the system language when nil.
+    static func progressLabel(language: String?) -> String {
+        let key = language ?? ""
+        if let label = progressLabels[key] { return label }
+        let label = Localizer(bundle: resources, language: language)("progress")
+        progressLabels[key] = label
+        return label
+    }
+
+    /// Labels already resolved, keyed by language, so frequent redraws skip the bundle lookup.
+    private static var progressLabels: [String: String] = [:]
+
+    private static let resources = Bundle.resourceBundle(named: "MenuBarKit_MenuBarKit", fallback: .module)
 }
