@@ -51,6 +51,14 @@ final class PanelCommandsTests: XCTestCase {
     }
 
     @MainActor
+    func testOnlyTextFieldsAndFieldEditorsCountAsTextInput() {
+        XCTAssertTrue(TextInputHit.isTextInput(NSTextField()))
+        XCTAssertTrue(TextInputHit.isTextInput(NSTextView()))
+        XCTAssertFalse(TextInputHit.isTextInput(NSButton()))
+        XCTAssertFalse(TextInputHit.isTextInput(nil))
+    }
+
+    @MainActor
     private func install(in menu: NSMenu) -> NSMenu {
         EditMenu.install(
             in: menu, title: "Edit", undo: "Undo", redo: "Redo", cut: "Cut", copy: "Copy",

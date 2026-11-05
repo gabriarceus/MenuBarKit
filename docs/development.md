@@ -25,7 +25,7 @@ Tests use XCTest and live in [Tests/MenuBarKitTests](../Tests/MenuBarKitTests). 
 | AppLanguageOptionTests.swift       | Identifiers and the system-follow option                                                          |
 | LocalizerTests.swift               | Missing keys, forced and empty languages, format arguments, literal percent signs, package strings |
 | PanelNavigationTests.swift         | Published initial and changed screens                                                             |
-| PanelCommandsTests.swift           | Edit menu creation, existing menus, and child-first Escape                                        |
+| PanelCommandsTests.swift           | Edit menu creation, existing menus, child-first Escape, and text-input hits                       |
 | PanelPlacementTests.swift          | Anchors on negative origins, hidden or invalid anchors, display removal, growth, and fitting      |
 | PanelHelpTests.swift               | Delay, cancellation, replaced requests, release, bubble width, and placement at every edge        |
 | StatusItemControllerTests.swift    | Outside-click exclusion, icon updates, presentation, screen changes, disconnect, and release      |

@@ -103,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 | `StatusItemController`                             | Primary and secondary actions, presentation state, and a template icon with optional text and a dot for a caller-owned status item and panel. |
 | `PanelPlacement`                                   | Position below the status item, or a main-screen fallback, with usable bounds for content sizing.         |
 | `EditMenu` / `panelEscape(cancelEditing:dismiss:)` | Responder-chain edit commands and child-first Escape handling.                                            |
+| `onClickOutsideTextInput(isActive:perform:)` | Ends text editing when the user clicks outside text fields in the panel.                                  |
 | `LoginItem`                                        | Launch-at-login status, explicit registration, errors, and refresh after app activation.                  |
 
 See the [app management guide](docs/app-management.md). For global shortcuts, see the [global shortcuts guide](docs/global-shortcuts.md).

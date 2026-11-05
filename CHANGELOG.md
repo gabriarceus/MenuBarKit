@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `onClickOutsideTextInput(isActive:perform:)` reports a click outside text fields, so an app can end text editing in its panel.
 - `panelHelpHost(isActive:delay:)` sets how long the pointer must rest on a target before its help appears.
 
 ### Changed
