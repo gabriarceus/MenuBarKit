@@ -20,7 +20,7 @@ let package = Package(
     name: "MyApp",
     platforms: [.macOS(.v15)],
     dependencies: [
-        .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.3.0")
+        .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.4.0")
     ],
     targets: [
         .executableTarget(name: "MyApp", dependencies: ["MenuBarKit"])
@@ -110,7 +110,7 @@ See the [app management guide](docs/app-management.md). For global shortcuts, se
 
 ### Notifications
 
-`Notifier` wraps the user notification center: authorization with a published `authorizationDenied` flag, immediate `send(title:body:)`, one-shot `schedule(title:body:at:identifier:)`, and `cancelScheduled` by identifier or prefix. Every call does nothing outside a `.app` bundle, where the notification center would abort.
+`Notifier` wraps the user notification center: authorization with a published `authorizationDenied` flag, immediate `send(title:body:identifier:)`, one-shot `schedule(title:body:at:identifier:)`, `cancelScheduled` by identifier or prefix, and `onNotificationClick` for clicked notifications. Every call does nothing outside a `.app` bundle, where the notification center would abort.
 
 ### Localization
 

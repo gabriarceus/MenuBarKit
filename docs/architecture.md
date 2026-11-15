@@ -19,7 +19,7 @@ Paths in this table are relative to [Sources/MenuBarKit](../Sources/MenuBarKit).
 | Components     | Components/PanelHeader.swift, GlassIconButton.swift, MeterBar.swift, MeterRow.swift, SectionLabel.swift, PanelSection.swift, InputChrome.swift | Reusable SwiftUI building blocks for panel content                                      |
 | Contextual help | Components/PanelHelp.swift                                                                                                       | Delayed help targets, the root host, bubble sizing, and placement                       |
 | Localization   | Localization/Localization.swift, Localization/ResourceBundle.swift                                                                | Localizer, language options, and resource bundle lookup in a built app                  |
-| Notifications  | Notifications/Notifier.swift                                                                                                      | Authorization, immediate and scheduled notifications, and bundle checks                 |
+| Notifications  | Notifications/Notifier.swift                                                                                                      | Authorization, immediate and scheduled notifications, click handling, and bundle checks |
 | Package strings | Resources/\*.lproj/Localizable.strings                                                                                           | Strings the package shows itself, such as accessibility labels                          |
 
 ## Ownership

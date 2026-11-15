@@ -30,6 +30,7 @@ Tests use XCTest and live in [Tests/MenuBarKitTests](../Tests/MenuBarKitTests). 
 | PanelHelpTests.swift               | Delay, cancellation, replaced requests, release, bubble width, and placement at every edge        |
 | StatusItemControllerTests.swift    | Outside-click exclusion, icon updates, presentation, screen changes, disconnect, and release      |
 | LoginItemTests.swift               | Status mapping, unbundled processes, approval, failed operations, and activation refresh          |
+| NotifierTests.swift                | Default click action delivery and dismissal filtering for notification responses                  |
 
 ## Manual checks
 

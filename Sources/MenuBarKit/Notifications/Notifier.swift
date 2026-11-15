@@ -12,6 +12,9 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
     /// default implementation logs the error.
     public var onDeliveryError: ((Error) -> Void)?
 
+    /// Called with the notification's request identifier when the user clicks a delivered notification.
+    public var onNotificationClick: ((String) -> Void)?
+
     private let isBundled = Bundle.main.bundleURL.pathExtension == "app"
 
     public override init() {
@@ -43,8 +46,9 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
 
-    /// Delivers a notification now. A rejected request goes to `onDeliveryError`.
-    public func send(title: String, body: String) {
+    /// Delivers a notification now, replacing a pending or delivered notification with the same
+    /// `identifier`. A rejected request goes to `onDeliveryError`.
+    public func send(title: String, body: String, identifier: String = UUID().uuidString) {
         guard isBundled else {
             NSLog("Notification suppressed (not running from a .app bundle): %@ — %@", title, body)
             return
@@ -54,7 +58,7 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
         content.body = body
         content.sound = .default
         let request = UNNotificationRequest(
-            identifier: UUID().uuidString, content: content, trigger: nil)
+            identifier: identifier, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { [weak self] error in
             if let error {
                 Task { @MainActor in self?.onDeliveryError?(error) }
@@ -123,5 +127,24 @@ public final class Notifier: NSObject, ObservableObject, UNUserNotificationCente
             @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound])
+    }
+
+    /// Reports the identifier of a clicked notification to `onNotificationClick`.
+    nonisolated public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let actionIdentifier = response.actionIdentifier
+        let requestIdentifier = response.notification.request.identifier
+        completionHandler()
+        handleResponse(actionIdentifier: actionIdentifier, requestIdentifier: requestIdentifier)
+    }
+
+    nonisolated func handleResponse(actionIdentifier: String, requestIdentifier: String) {
+        guard actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
+        Task { @MainActor [weak self] in
+            self?.onNotificationClick?(requestIdentifier)
+        }
     }
 }
